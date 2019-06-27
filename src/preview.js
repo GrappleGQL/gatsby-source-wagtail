@@ -148,7 +148,7 @@ const PreviewProvider = (query, onNext) => {
   }
 };
 
-const withPreview = (WrappedComponent, pageQuery) => {
+export const withPreview = (WrappedComponent, pageQuery) => {
   // ...and returns another component...
   return class extends React.Component {
     constructor(props) {
