@@ -148,7 +148,7 @@ const PreviewProvider = (query, onNext) => {
   }
 };
 
-export default withPreview = (WrappedComponent, pageQuery) => {
+const withPreview = (WrappedComponent, pageQuery) => {
   // ...and returns another component...
   return class extends React.Component {
     constructor(props) {
@@ -173,3 +173,5 @@ export default withPreview = (WrappedComponent, pageQuery) => {
     }
   };
 };
+
+export default withPreview
