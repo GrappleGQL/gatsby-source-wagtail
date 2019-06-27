@@ -5,7 +5,7 @@ import traverse from 'traverse';
 import cloneDeep from 'lodash.clonedeep';
 import { StaticQuery } from 'gatsby';
 import PropTypes from 'prop-types';
-export { withPreview } from "./preview"
+export { withPreview, decodePreviewUrl } from "./preview"
 
 // Allow string OR patched queries format
 StaticQuery.propTypes.query = PropTypes.oneOfType([

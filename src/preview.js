@@ -72,7 +72,7 @@ const generatePreviewQuery = (query, contentType, token, subscribe = false) => {
   return print(query);
 };
 
-const decodePreviewUrl = () => {
+export const decodePreviewUrl = () => {
   if (typeof window !== "undefined") {
     return qs.parse(window.location.search.slice(1));
   }
