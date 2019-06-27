@@ -155,11 +155,11 @@ export const withPreview = (WrappedComponent, pageQuery) => {
     constructor(props) {
       super(props);
       this.state = {
-        wagtail: cloneDeep(props.data.wagtail)
+        wagtail: cloneDeep((props.data) ? props.data.wagtail : {})
       };
       PreviewProvider(pageQuery, res => {
         this.setState({
-          wagtail: merge({}, this.props.data.wagtail, res.data)
+          wagtail: merge({}, this.state.wagtail, res.data)
         });
       });
     }
