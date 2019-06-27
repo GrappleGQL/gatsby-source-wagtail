@@ -1,3 +1,4 @@
+import React from 'react'
 import qs from "querystring";
 import { cloneDeep, merge } from "lodash";
 import { ApolloClient } from "apollo-client";
