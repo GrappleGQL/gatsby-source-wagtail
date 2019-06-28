@@ -1,6 +1,6 @@
 const path = require('path')
 
-export const createWagtailPages = (pageMap, graphql, actions, fragmentIndex) => {
+export const createWagtailPages = (pageMap, graphql, actions, fragmentFiles) => {
     return graphql(`
         {
             wagtail {
@@ -37,7 +37,7 @@ export const createWagtailPages = (pageMap, graphql, actions, fragmentIndex) => 
             createPage({
                 path: '/preview',
                 component: path.resolve('./node_modules/gatsby-source-graphql-universal/preview-template.js'),
-                context: { pageMap, fragmentIndex },
+                context: { pageMap, fragmentFiles },
             })
 
         } else {

@@ -12,7 +12,7 @@ import { print } from "graphql/language/printer"
 import { getIsolatedQuery } from './index'
 
 
-const generatePreviewQuery = (query, contentType, token, subscribe = false) => {
+const generatePreviewQuery = (query, contentType, token, fragments, subscribe = false) => {
   // The preview args nessacery for preview backend to find the right model.
   query = cloneDeep(query);
   const previewArgs = [
@@ -73,7 +73,10 @@ const generatePreviewQuery = (query, contentType, token, subscribe = false) => {
     queryDef.selectionSet.selections = pageSelections;
   }
 
-  return print(query);
+  return `    
+    ${print(query)}
+    ${fragments}
+  `;
 };
 
 export const decodePreviewUrl = () => {
@@ -82,7 +85,7 @@ export const decodePreviewUrl = () => {
   }
 };
 
-const PreviewProvider = (query, onNext) => {
+const PreviewProvider = (query, fragments = '', onNext) => {
   // Extract query from wagtail schema
   const isolatedQuery = getIsolatedQuery(query, "wagtail", "wagtail");
   const { content_type, token } = decodePreviewUrl();
@@ -92,12 +95,14 @@ const PreviewProvider = (query, onNext) => {
       isolatedQuery,
       content_type,
       token,
+      fragments,
       true
     );
     const previewQuery = generatePreviewQuery(
       isolatedQuery,
       content_type,
       token,
+      fragments,
       false
     );
 
@@ -153,7 +158,7 @@ const PreviewProvider = (query, onNext) => {
   }
 };
 
-export const withPreview = (WrappedComponent, pageQuery) => {
+export const withPreview = (WrappedComponent, pageQuery, fragments = '') => {
   // ...and returns another component...
   return class extends React.Component {
     constructor(props) {
@@ -161,7 +166,7 @@ export const withPreview = (WrappedComponent, pageQuery) => {
       this.state = {
         wagtail: cloneDeep((props.data) ? props.data.wagtail : {})
       };
-      PreviewProvider(pageQuery, res => {
+      PreviewProvider(pageQuery, fragments, res => {
         this.setState({
           wagtail: merge({}, this.state.wagtail, res.data)
         });
