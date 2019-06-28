@@ -75,7 +75,6 @@ const generatePreviewQuery = (query, contentType, token, fragments, subscribe = 
 
   return `    
     ${print(query)}
-    ${fragments}
   `;
 };
 

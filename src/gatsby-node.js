@@ -1,15 +1,53 @@
+const fetch = require('node-fetch');
+const fs = require('fs');
 const { sourceNodes } = require('./graphql-nodes');
 const { getRootQuery } = require('./getRootQuery');
 
 exports.sourceNodes = sourceNodes;
 
-exports.onCreatePage = ({ page, actions }) => {
+exports.onCreatePage = ({ page, actions }, options) => {
   const rootQuery = getRootQuery(page.componentPath);
   if (rootQuery) {
     page.context = page.context || {};
     page.context.rootQuery = rootQuery;
     actions.createPage(page);
   }
+
+  fetch(`${options.url}/graphql`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      variables: {},
+      query: `
+        {
+          __schema {
+            types {
+              kind
+              name
+              possibleTypes {
+                name
+              }
+            }
+          }
+        }
+      `,
+    }),
+  })
+    .then(result => result.json())
+    .then(result => {
+      // here we're filtering out any type information unrelated to unions or interfaces
+      const filteredData = result.data.__schema.types.filter(
+        type => type.possibleTypes !== null,
+      );
+      result.data.__schema.types = filteredData;
+      fs.writeFile('./node_modules/gatsby-source-graphql-universal/fragmentTypes.json', JSON.stringify(result.data), err => {
+        if (err) {
+          console.error('Error writing fragmentTypes file', err);
+        } else {
+          console.log('Fragment types successfully extracted!');
+        }
+      });
+    });
 };
 
 exports.onCreateWebpackConfig = ({ stage, actions, getConfig }) => {
