@@ -1,6 +1,6 @@
 const path = require('path')
 
-export const createWagtailPages = (pageMap, graphql, actions) => {
+export const createWagtailPages = (pageMap, graphql, actions, fragmentIndex) => {
     return graphql(`
         {
             wagtail {
@@ -37,8 +37,8 @@ export const createWagtailPages = (pageMap, graphql, actions) => {
             createPage({
                 path: '/preview',
                 component: path.resolve('./node_modules/gatsby-source-graphql-universal/preview-template.js'),
-                context: { pageMap },
-            })  
+                context: { pageMap, fragmentIndex },
+            })
 
         } else {
             console.log("Could not read any Wagtail Pages from query!")

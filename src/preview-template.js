@@ -5,9 +5,10 @@ import {
 } from "./preview"
 
 const PreviewPage = props => {
-    const { pageMap } = props.pageContext
+    const { pageMap, fragmentIndex } = props.pageContext
     let components = {}
     if (pageMap) {
+        console.log(fragmentIndex)
         Object.keys(pageMap).map(contentType => {
             const componentFile = require(`../../${pageMap[contentType].slice(2)}`)
             components[contentType.toLowerCase()] = withPreview(
