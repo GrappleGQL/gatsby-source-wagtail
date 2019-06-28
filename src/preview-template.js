@@ -1,6 +1,7 @@
 import React from "react"
 import {
-  decodePreviewUrl
+  decodePreviewUrl,
+  withPreview
 } from "./preview"
 
 const PreviewPage = props => {
