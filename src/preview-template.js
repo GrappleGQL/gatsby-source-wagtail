@@ -22,7 +22,6 @@ const PreviewPage = props => {
                 })
             })
         }
-        console.log(fragments)
 
         Object.keys(pageMap).map(contentType => {
             const componentFile = require(`../../${pageMap[contentType].slice(2)}`)

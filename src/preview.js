@@ -2,14 +2,16 @@ import React from 'react'
 import qs from "querystring";
 import { cloneDeep, merge } from "lodash";
 import { ApolloClient } from "apollo-client";
-import { InMemoryCache } from "apollo-cache-inmemory";
+import { InMemoryCache, IntrospectionFragmentMatcher } from "apollo-cache-inmemory";
 import { split } from "apollo-link";
 import { HttpLink } from "apollo-link-http";
 import { WebSocketLink } from "apollo-link-ws";
 import { getMainDefinition } from "apollo-utilities";
 import { throwServerError } from "apollo-link-http-common";
 import { print } from "graphql/language/printer"
+
 import { getIsolatedQuery } from './index'
+import introspectionQueryResultData from './fragmentTypes.json'
 
 
 const generatePreviewQuery = (query, contentType, token, fragments, subscribe = false) => {
@@ -74,6 +76,7 @@ const generatePreviewQuery = (query, contentType, token, fragments, subscribe = 
   }
 
   return `    
+    ${fragments}
     ${print(query)}
   `;
 };
@@ -133,8 +136,13 @@ const PreviewProvider = (query, fragments = '', onNext) => {
       httpLink
     );
 
+    // Loading fragments
+    const fragmentMatcher = new IntrospectionFragmentMatcher({
+      introspectionQueryResultData
+    });
+
     // Create actual client that makes requests
-    const cache = new InMemoryCache();
+    const cache = new InMemoryCache({ fragmentMatcher });
     const client = new ApolloClient({ link, cache });
 
     // Get first version of preview to render the template
