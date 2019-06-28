@@ -34,7 +34,7 @@ export const createWagtailPages = (pageMap, graphql, actions) => {
             // Create preview page and pass page-map.
             createPage({
                 path: '/preview',
-                component: path.resolve('./preview/template.js'),
+                component: path.resolve('./templates/preview.js'),
                 context: { pageMap },
             })  
 
