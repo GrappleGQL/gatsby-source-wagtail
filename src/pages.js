@@ -1,3 +1,5 @@
+const path = require('path')
+
 export const createWagtailPages = (pageMap, graphql, actions) => {
     return graphql(`
         {
