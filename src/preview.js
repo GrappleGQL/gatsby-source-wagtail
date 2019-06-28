@@ -9,7 +9,7 @@ import { WebSocketLink } from "apollo-link-ws";
 import { getMainDefinition } from "apollo-utilities";
 import { throwServerError } from "apollo-link-http-common";
 import { print } from "graphql/language/printer"
-import { getIsolatedQuery } from './preview'
+import { getIsolatedQuery } from './index'
 
 
 const generatePreviewQuery = (query, contentType, token, subscribe = false) => {
