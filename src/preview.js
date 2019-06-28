@@ -43,9 +43,11 @@ const generatePreviewQuery = (query, contentType, token, subscribe = false) => {
   ];
 
   // Rename query for debugging reasons
-  const queryDef = query.definitions[0];
   console.log(query)
+  const queryDef = query.definitions[0];
   queryDef.arguments = []
+  queryDef.variableDefinitions = []
+
   if (queryDef.name) {
     queryDef.name.value = "Preview" + queryDef.name.value;
   } else {
