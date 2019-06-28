@@ -1,14 +1,14 @@
 import React from "react"
 import {
   decodePreviewUrl
-} from "../preview"
+} from "./preview"
 
 const PreviewPage = props => {
     const { pageMap } = props.pageContext
     let components = {}
     if (pageMap) {
         Object.keys(pageMap).map(contentType => {
-            const componentFile = require(`../../../${pageMap[contentType].slice(2)}`)
+            const componentFile = require(`../../${pageMap[contentType].slice(2)}`)
             components[contentType.toLowerCase()] = withPreview(
                 componentFile.default, 
                 componentFile.query
