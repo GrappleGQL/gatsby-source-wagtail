@@ -1,5 +1,5 @@
 const fetch = require('node-fetch');
-const fs = require('fs');
+const fs = require('fs-extra');
 const { sourceNodes } = require('./graphql-nodes');
 const { getRootQuery } = require('./getRootQuery');
 
@@ -82,3 +82,11 @@ exports.onCreateWebpackConfig = ({ stage, actions, getConfig }) => {
 
   actions.replaceWebpackConfig(config)
 };
+
+exports.onPreExtractQueries = async ({ store, getNodes }) => {
+  const program = store.getState().program
+  await fs.copy(
+    require.resolve(`gatsby-source-graphql-universal/fragments.js`),
+    `${program.directory}/.cache/fragments/gatsby-source-graphql-universal-fragments.js`
+  )
+}
