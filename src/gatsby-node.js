@@ -3,7 +3,16 @@ const fs = require('fs-extra');
 const { sourceNodes } = require('./graphql-nodes');
 const { getRootQuery } = require('./getRootQuery');
 
-exports.sourceNodes = sourceNodes;
+const queryBackend = (query, url) => fetch(`${url}/graphql`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    variables: {},
+    query,
+  }),
+}).then(result => result.json())
+
+exports.sourceNodes = sourceNodes
 
 exports.onCreatePage = ({ page, actions }, options) => {
   const rootQuery = getRootQuery(page.componentPath);
@@ -13,28 +22,19 @@ exports.onCreatePage = ({ page, actions }, options) => {
     actions.createPage(page);
   }
 
-  fetch(`${options.url}/graphql`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      variables: {},
-      query: `
-        {
-          __schema {
-            types {
-              kind
-              name
-              possibleTypes {
-                name
-              }
-            }
+  queryBackend(`
+    {
+      __schema {
+        types {
+          kind
+          name
+          possibleTypes {
+            name
           }
         }
-      `,
-    }),
-  })
-    .then(result => result.json())
-    .then(result => {
+      }
+    }
+  `, options.url).then(result => {
       // here we're filtering out any type information unrelated to unions or interfaces
       const filteredData = result.data.__schema.types.filter(
         type => type.possibleTypes !== null,
