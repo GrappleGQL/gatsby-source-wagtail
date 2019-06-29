@@ -12,14 +12,15 @@ const PreviewPage = props => {
         
         // Import all fragment files and extract string
         let fragments = ''
-        let baseFragments = require(`./fragments.js`)
-        if (baseFragments.wagtailFragments) {
-            fragments += baseFragments.wagtailFragments
-        }
-
-        if (fragmentFiles) {
-            fragmentFiles.map(file => {
-                const module = require(`../../${file.slice(2)}`)
+        import(`./fragments.js`).then(baseFragments => {
+            if (baseFragments.wagtailFragments) {
+                fragments += baseFragments.wagtailFragments
+            }    
+        })
+        
+        if (fragmentFiles.length) {
+            fragmentFiles.map(async file => {
+                const module = await import(`../../${file.slice(2)}`)
                 Object.keys(module).map(exportKey => {
                     const exportObj = module[exportKey]
                     if (typeof exportObj.source == 'string') {
@@ -29,8 +30,8 @@ const PreviewPage = props => {
             })
         }
 
-        Object.keys(pageMap).map(contentType => {
-            const componentFile = require(`../../${pageMap[contentType].slice(2)}`)
+        Object.keys(pageMap).map(async contentType => {
+            const componentFile = await import(`../../${pageMap[contentType].slice(2)}`)
             components[contentType.toLowerCase()] = withPreview(
                 componentFile.default, 
                 componentFile.query,
