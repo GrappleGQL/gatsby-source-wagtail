@@ -43,8 +43,6 @@ exports.onCreatePage = ({ page, actions }, options) => {
       fs.writeFile('./node_modules/gatsby-source-wagtail/fragmentTypes.json', JSON.stringify(result.data), err => {
         if (err) {
           console.error('Error writing fragmentTypes file', err);
-        } else {
-          console.log('Fragment types successfully extracted!');
         }
       });
     });

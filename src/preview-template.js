@@ -7,7 +7,8 @@ import {
 const PreviewPage = props => {
     const { pageMap, fragmentFiles = [] } = props.pageContext
     let components = {}
-    if (pageMap) {
+    const isBrowser = typeof window != 'undefined'
+    if (pageMap && isBrowser) {
         
         // Import all fragment files and extract string
         let fragments = ''
