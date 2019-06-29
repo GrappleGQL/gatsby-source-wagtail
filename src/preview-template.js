@@ -3,6 +3,7 @@ import {
   decodePreviewUrl,
   withPreview
 } from "./preview"
+import baseFragments from '../../.cache/fragments/gatsby-source-wagtail-fragments.js'
 
 const PreviewPage = props => {
     const { pageMap, fragmentFiles = [] } = props.pageContext
@@ -12,15 +13,13 @@ const PreviewPage = props => {
         
         // Import all fragment files and extract string
         let fragments = ''
-        import(`./fragments.js`).then(baseFragments => {
-            if (baseFragments.wagtailFragments) {
-                fragments += baseFragments.wagtailFragments
-            }    
-        })
-        
+        if (baseFragments) {
+            fragments += baseFragments.source
+        }
+
         if (fragmentFiles.length) {
-            fragmentFiles.map(async file => {
-                const module = await import(`../../${file.slice(2)}`)
+            fragmentFiles.map(file => {
+                const module = require(`../../${file.slice(2)}`)
                 Object.keys(module).map(exportKey => {
                     const exportObj = module[exportKey]
                     if (typeof exportObj.source == 'string') {
@@ -30,8 +29,8 @@ const PreviewPage = props => {
             })
         }
 
-        Object.keys(pageMap).map(async contentType => {
-            const componentFile = await import(`../../${pageMap[contentType].slice(2)}`)
+        Object.keys(pageMap).map(contentType => {
+            const componentFile = require(`../../${pageMap[contentType].slice(2)}`)
             components[contentType.toLowerCase()] = withPreview(
                 componentFile.default, 
                 componentFile.query,

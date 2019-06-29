@@ -1,4 +1,6 @@
-export const wagtailFragments = graphql`
+import { graphql } from 'gatsby'
+
+export const query = graphql`
     fragment WagtailImageFixed on ImageObjectType {
         base64
         width
@@ -45,3 +47,5 @@ export const wagtailFragments = graphql`
         sizes
     }
 `
+
+export default query
