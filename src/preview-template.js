@@ -5,12 +5,17 @@ import {
 } from "./preview"
 
 const PreviewPage = props => {
-    const { pageMap, fragmentFiles } = props.pageContext
+    const { pageMap, fragmentFiles = [] } = props.pageContext
     let components = {}
     if (pageMap) {
         
         // Import all fragment files and extract string
         let fragments = ''
+        let baseFragments = require(`./fragments.js`)
+        if (baseFragments.wagtailFragments) {
+            fragments += baseFragments.wagtailFragments
+        }
+
         if (fragmentFiles) {
             fragmentFiles.map(file => {
                 const module = require(`../../${file.slice(2)}`)
