@@ -40,7 +40,7 @@ exports.onCreatePage = ({ page, actions }, options) => {
         type => type.possibleTypes !== null,
       );
       result.data.__schema.types = filteredData;
-      fs.writeFile('./node_modules/gatsby-source-graphql-universal/fragmentTypes.json', JSON.stringify(result.data), err => {
+      fs.writeFile('./node_modules/gatsby-source-wagtail/fragmentTypes.json', JSON.stringify(result.data), err => {
         if (err) {
           console.error('Error writing fragmentTypes file', err);
         } else {
@@ -59,7 +59,7 @@ exports.onCreateWebpackConfig = ({ stage, actions, getConfig }) => {
 
   const replaceRule = ruleUse => {
     if (ruleUse.loader && ruleUse.loader.indexOf(`gatsby/dist/utils/babel-loader.js`) >= 0) {
-      ruleUse.loader = require.resolve(`gatsby-source-graphql-universal/babel-loader.js`);
+      ruleUse.loader = require.resolve(`gatsby-source-wagtail/babel-loader.js`);
     }
   }
 
@@ -86,7 +86,7 @@ exports.onCreateWebpackConfig = ({ stage, actions, getConfig }) => {
 exports.onPreExtractQueries = async ({ store, getNodes }) => {
   const program = store.getState().program
   await fs.copy(
-    require.resolve(`gatsby-source-graphql-universal/fragments.js`),
-    `${program.directory}/.cache/fragments/gatsby-source-graphql-universal-fragments.js`
+    require.resolve(`gatsby-source-wagtail/fragments.js`),
+    `${program.directory}/.cache/fragments/gatsby-source-wagtail-fragments.js`
   )
 }

@@ -36,7 +36,7 @@ export const createWagtailPages = (pageMap, graphql, actions, fragmentFiles) => 
             // Create preview page and pass page-map.
             createPage({
                 path: '/preview',
-                component: path.resolve('./node_modules/gatsby-source-graphql-universal/preview-template.js'),
+                component: path.resolve('./node_modules/gatsby-source-wagtail/preview-template.js'),
                 context: { pageMap, fragmentFiles },
             })
 
