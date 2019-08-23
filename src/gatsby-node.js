@@ -79,12 +79,12 @@ exports.onCreateWebpackConfig = ({ stage, actions, getConfig }) => {
   actions.replaceWebpackConfig(config)
 };
 
-exports.onPreExtractQueries = async ({ store, getNodes, actions }, options) => {
+exports.onPreExtractQueries = async ({ store, actions }, options) => {
   const { createRedirect } = actions
 
   queryBackend(`{
     imageType
-    rediects { 
+    redirects { 
       oldPath
       newUrl
     }
