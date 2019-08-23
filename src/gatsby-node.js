@@ -1,17 +1,10 @@
-const fetch = require('node-fetch');
 const fs = require('fs-extra');
+const request = require('graphql-request')
 const { sourceNodes } = require('./graphql-nodes');
 const { getRootQuery } = require('./getRootQuery');
 const { generateImageFragments } = require('./fragments')
 
-const queryBackend = (query, url) => fetch(url, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    variables: {},
-    query,
-  }),
-}).then(result => result.json())
+const queryBackend = (query, url) => request(url, query)
 
 exports.sourceNodes = sourceNodes
 
@@ -79,10 +72,17 @@ exports.onCreateWebpackConfig = ({ stage, actions, getConfig }) => {
   actions.replaceWebpackConfig(config)
 };
 
-exports.onPreExtractQueries = async ({ store, getNodes }, options) => {
+exports.onPreExtractQueries = async ({ store, getNodes, actions }, options) => {
+  const { createRedirect } = actions
+
   queryBackend(`{
     imageType
+    rediects { 
+      oldPath
+      newUrl
+    }
   }`, options.url).then(({ data }) => {
+    // Generate Image Fragments for the servers respective image model.
     const program = store.getState().program
     const fragments = generateImageFragments(data.imageType)
     fs.writeFile(
@@ -90,5 +90,13 @@ exports.onPreExtractQueries = async ({ store, getNodes }, options) => {
       fragments, 
       err => console.error(err)
     )
+
+    // Generate redirects for Netlify, controlled by Wagtail Admin.
+    data.redirects
+      .map(redirect => createRedirect({
+        fromPath: redirect.oldPath,
+        toPath: redirect.newUrl,
+        isPermanent: redirect.isPermanent
+      }))
   })
 }
