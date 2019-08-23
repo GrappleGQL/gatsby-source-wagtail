@@ -1,17 +1,10 @@
-const fetch = require('node-fetch');
 const fs = require('fs-extra');
+const request = require('graphql-request')
 const { sourceNodes } = require('./graphql-nodes');
 const { getRootQuery } = require('./getRootQuery');
 const { generateImageFragments } = require('./fragments')
 
-const queryBackend = (query, url) => fetch(url, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    variables: {},
-    query,
-  }),
-}).then(result => result.json())
+const queryBackend = (query, url) => request(url, query)
 
 exports.sourceNodes = sourceNodes
 
