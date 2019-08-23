@@ -87,6 +87,7 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
     redirects { 
       oldPath
       newUrl
+      isPermanent
     }
   }`, options.url).then(({ data }) => {
     // Generate Image Fragments for the servers respective image model.
