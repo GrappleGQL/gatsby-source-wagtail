@@ -89,7 +89,7 @@ export const decodePreviewUrl = () => {
 
 const PreviewProvider = (query, fragments = '', onNext) => {
   // Extract query from wagtail schema
-  const {typeName, fieldName, url } = window.___wagtail.wagtail
+  const {typeName, fieldName, url, websocketUrl } = window.___wagtail.wagtail
   const isolatedQuery = getIsolatedQuery(query, fieldName, typeName);
   const { content_type, token } = decodePreviewUrl();
   const endpoint = new URL(url)
@@ -117,7 +117,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
 
     // Create a WebSocket link:
     const wsLink = new WebSocketLink({
-      uri: `ws://${endpoint.host}/subscriptions`,
+      uri: websocketUrl || `ws://${endpoint.host}/subscriptions`,
       options: {
         reconnect: true
       }
