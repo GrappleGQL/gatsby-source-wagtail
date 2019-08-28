@@ -4,7 +4,7 @@ exports.onRenderBody = ({ setHeadComponents }, pluginOptions) => {
   const { 
     typeName,
     fieldName,
-    isDefault,
+    isDefault = true,
     url, 
     websocketUrl = null, 
     headers 
