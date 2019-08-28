@@ -4,9 +4,9 @@ const { sourceNodes } = require('./graphql-nodes');
 const { getRootQuery } = require('./getRootQuery');
 const { generateImageFragments } = require('./fragments')
 
-const queryBackend = (query, url) => fetch(url, {
+const queryBackend = (query, url, headers) => fetch(url, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 'Content-Type': 'application/json', ...headers },
   body: JSON.stringify({
     variables: {},
     query,
@@ -35,7 +35,7 @@ exports.onCreatePage = ({ page, actions }, options) => {
         }
       }
     }
-  `, options.url).then(result => {
+  `, options.url, options.headers).then(result => {
       // here we're filtering out any type information unrelated to unions or interfaces
       const filteredData = result.data.__schema.types.filter(
         type => type.possibleTypes !== null,
@@ -89,7 +89,7 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
       newUrl
       isPermanent
     }
-  }`, options.url).then(({ data }) => {
+  }`, options.url, options.headers).then(({ data }) => {
     // Generate Image Fragments for the servers respective image model.
     const program = store.getState().program
     const fragments = generateImageFragments(data.imageType)
