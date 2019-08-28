@@ -84,7 +84,7 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
 
   queryBackend(`{
     imageType
-    redirects { 
+    redirects {
       oldPath
       newUrl
       isPermanent

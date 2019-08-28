@@ -89,7 +89,7 @@ export const decodePreviewUrl = () => {
 
 const PreviewProvider = (query, fragments = '', onNext) => {
   // Extract query from wagtail schema
-  const {typeName, fieldName, url, websocketUrl, headers } = window.___wagtail.wagtail
+  const {typeName, fieldName, url, websocketUrl, headers } = window.___wagtail.default
   const isolatedQuery = getIsolatedQuery(query, fieldName, typeName);
   const { content_type, token } = decodePreviewUrl();
   const endpoint = new URL(url)
