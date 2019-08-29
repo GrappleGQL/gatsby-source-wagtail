@@ -14,7 +14,7 @@ const queryBackend = (query, url, headers) => fetch(url, {
 }).then(result => result.json())
 
 // Monkeypatch options to allow default fieldName and typeName
-exports.onPreInit = ({}, options) = {
+exports.onPreInit = ({}, options) => {
   options.fieldName = options.fieldName || 'wagtail'
   options.typeName = options.typeName || 'wagtail'
 }
