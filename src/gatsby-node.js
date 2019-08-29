@@ -13,6 +13,12 @@ const queryBackend = (query, url, headers) => fetch(url, {
   }),
 }).then(result => result.json())
 
+// Monkeypatch options to allow default fieldName and typeName
+exports.onPreInit = ({}, options) => {
+  options.fieldName = options.fieldName || 'wagtail'
+  options.typeName = options.typeName || 'wagtail'
+}
+
 exports.sourceNodes = sourceNodes
 
 exports.onCreatePage = ({ page, actions }, options) => {
@@ -84,7 +90,7 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
 
   queryBackend(`{
     imageType
-    redirects { 
+    redirects {
       oldPath
       newUrl
       isPermanent
