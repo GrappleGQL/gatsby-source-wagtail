@@ -1,6 +1,8 @@
 const path = require('path')
 
-export const createWagtailPages = (pageMap, graphql, actions, fragmentFiles) => {
+export const createWagtailPages = (pageMap, args, fragmentFiles = []) => {
+    const  { graphql, actions, cache } = args
+    const { createPage, touchNode } = actions
     return graphql(`
         {
             wagtail {
@@ -13,14 +15,22 @@ export const createWagtailPages = (pageMap, graphql, actions, fragmentFiles) => 
             }
         }
     `).then(res => {
-        const { createPage } = actions
+        const pages = res.data.wagtail.pages
+        if (pages) {
+            // Create pages for any page objects that match the page map.
+            pages.map(async page => {
+                const pageCacheKey = `page-${page.id}`
+                const pageHash = await cache.get(pageCacheKey)
+                if (pageHash && pageHash == page.fileHash) {
+                    const node = getNodes().find(node => node.url == url)
+                    touchNode({ nodeId: node.id })
+                    return;
+                } else {
+                    cache.set(pageCacheKey, page.hash)
+                }
 
-        if (res.data.wagtail.pages) {
-            const pages = res.data.wagtail.pages
-            
-            // Create pages for any page objects that match the page-map.
-            pages.map(page => {
-                const matchingKey = Object.keys(pageMap)
+                const matchingKey = Object
+                    .keys(pageMap)
                     .find(key => key.toLowerCase() == page.contentType.toLowerCase())
                 
                 if (matchingKey) {
@@ -39,9 +49,6 @@ export const createWagtailPages = (pageMap, graphql, actions, fragmentFiles) => 
                 component: path.resolve('./node_modules/gatsby-source-wagtail/preview-template.js'),
                 context: { pageMap, fragmentFiles },
             })
-
-        } else {
-            console.log("Could not read any Wagtail Pages from query!")
         }
     })
 }
