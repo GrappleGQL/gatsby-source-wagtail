@@ -29,6 +29,9 @@ export const createWagtailPages = (pageMap, args, fragmentFiles = []) => {
 
             // Create pages for any page objects that match the page map.
             return pages.map(page => {
+                if (!page.lastPublishedAt)
+                    return
+
                 const pageCacheKey = `page-${page.id}`
                 cache.get(pageCacheKey).then(pageHash => {
                 
