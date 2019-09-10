@@ -7,18 +7,19 @@ export const createWagtailPages = (pageMap, args, fragmentFiles = []) => {
         {
             wagtail {
                 pages {
-                    contentType
-                    url
-                    slug
-                    id
-                    lastPublishedAt
+                    ...on Story {
+                        contentType
+                        url
+                        slug
+                        id
+                        lastPublishedAt
+                    }
                 }
             }
         }
     `).then(res => {
         const pages = res.data.wagtail.pages
         if (pages) {
-            
             // Create preview page and pass page-map.
             createPage({
                 path: '/preview',
@@ -33,6 +34,7 @@ export const createWagtailPages = (pageMap, args, fragmentFiles = []) => {
                 
                     if (pageHash && page.lastPublishedAt == pageHash) {
                         console.log(`USING CACHED PAGE: ${page.url}`)
+                        return;
                     }
                 
                     const matchingKey = Object

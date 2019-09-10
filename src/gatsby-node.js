@@ -31,13 +31,18 @@ exports.onPostBootstrap = ({ getNodes, cache, actions }, options) => {
   queryBackend(`
     {
       pages {
-        id
-        url
-        hash: lastPublishedAt
+        ...on Story {
+          id
+          url
+          hash: lastPublishedAt
+        }
       }
     }
   `, options.url, options.headers).then(result => {      
     result.data.pages.map(page => {
+      if (!pages.lastPublishedAt)
+        return
+
       const pageCacheKey = `page-${page.id}`
       cache.get(pageCacheKey).then(pageHash => {
         if (pageHash && pageHash == page.hash) {
@@ -45,8 +50,10 @@ exports.onPostBootstrap = ({ getNodes, cache, actions }, options) => {
           touchNode({
             nodeId: node.id
           })
+          console.log(`TOUCHING PAGE: ${page.url}`)
         } else {
           cache.set(pageCacheKey, page.hash)
+          console.log(`CACHING PAGE: ${page.url}`)
         }
       })
     })
