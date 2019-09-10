@@ -14,11 +14,11 @@ export const createWagtailPages = (pageMap, args, fragmentFiles = []) => {
                 }
             }
         }
-    `).then(res => {
+    `).then(async res => {
         const pages = res.data.wagtail.pages
         if (pages) {
             // Create pages for any page objects that match the page map.
-            pages.map(async page => {
+            await pages.map(async page => {
                 const pageCacheKey = `page-${page.id}`
                 const pageHash = await cache.get(pageCacheKey)
                 if (pageHash && pageHash == page.fileHash) {
