@@ -19,7 +19,39 @@ exports.onPreInit = ({}, options) => {
   options.typeName = options.typeName || 'wagtail'
 }
 
+// Load wagtail schema
 exports.sourceNodes = sourceNodes
+
+// Touch any non-updated nodes.
+exports.onPostBootstrap = ({ getNodes, cache, actions }, options) => {
+  const { touchNode } = actions
+  const pageNodes = getNodes()
+    .filter(node => node.internal.type == 'SitePage')
+
+  queryBackend(`
+    {
+      pages {
+        id
+        url
+        hash: lastPublishedAt
+      }
+    }
+  `, options.url, options.headers).then(result => {      
+    result.data.pages.map(page => {
+      const pageCacheKey = `page-${page.id}`
+      cache.get(pageCacheKey).then(pageHash => {
+        if (pageHash && pageHash == page.hash) {
+          const node = pageNodes.find(node => node.path == page.url)
+          touchNode({
+            nodeId: node.id
+          })
+        } else {
+          cache.set(pageCacheKey, page.hash)
+        }
+      })
+    })
+  })
+}
 
 exports.onCreatePage = ({ page, actions }, options) => {
   const rootQuery = getRootQuery(page.componentPath);

@@ -11,6 +11,7 @@ export const createWagtailPages = (pageMap, args, fragmentFiles = []) => {
                     url
                     slug
                     id
+                    lastPublishedAt
                 }
             }
         }
@@ -29,15 +30,11 @@ export const createWagtailPages = (pageMap, args, fragmentFiles = []) => {
             return pages.map(page => {
                 const pageCacheKey = `page-${page.id}`
                 cache.get(pageCacheKey).then(pageHash => {
-                    
-                    if (pageHash && pageHash == page.fileHash) {
-                        const node = getNodes().find(node => node.url == url)
-                        touchNode({ nodeId: node.id })
-                        return;
-                    } else {
-                        cache.set(pageCacheKey, page.hash)
+                
+                    if (pageHash && page.lastPublishedAt == pageHash) {
+                        console.log(`USING CACHED PAGE: ${page.url}`)
                     }
-    
+                
                     const matchingKey = Object
                         .keys(pageMap)
                         .find(key => key.toLowerCase() == page.contentType.toLowerCase())
