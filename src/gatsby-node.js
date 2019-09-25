@@ -22,7 +22,7 @@ exports.onPreInit = ({}, options) => {
 // Stick remote Wagtail schema into local GraphQL endpoint
 exports.sourceNodes = sourceNodes
 
-exports.onPostBootstrap = async ({ getNodes, cache, actions }, options) => {
+exports.onPreBootstrap = async ({ getNodes, cache, actions }, options) => {
   // Get all pages and see when they were last updated.
   const result = await queryBackend(`
     {
@@ -51,9 +51,9 @@ exports.onPostBootstrap = async ({ getNodes, cache, actions }, options) => {
       const node = pageNodes.find(node => node.path == page.url)
       if (node) {
         console.log(`Result:`, node.id, cacheResult)
-        actions.touchNode({
-          nodeId: node.id
-        })
+        // actions.touchNode({
+        //   nodeId: node.id
+        // })
       }
     }
 
