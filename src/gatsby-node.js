@@ -69,7 +69,7 @@ exports.sourceNodes = (...args) => {
 } 
 
 
-exports.onCreatePage = (...args) => {
+exports.createPages = (...args) => {
   const { page, actions } = args[0]
   const options = args[1]
   cachePages(...args)
