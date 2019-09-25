@@ -50,19 +50,18 @@ exports.onPreBootstrap = async ({ getNodes, cache, actions }, options) => {
     if (cacheResult) {
       const node = pageNodes.find(node => node.path == page.url)
       if (node) {
-        console.log(`Source Result:`, node.id, cacheResult)
+        pageRecords.setKey(pageCacheKey, page)
         actions.touchNode({
           nodeId: node.id
         })
+      } else {
+        pageRecords.removeKey(pageCacheKey)
       }
     }
 
     // Update local cache
-    pageRecords.setKey(pageCacheKey, page)
+    pageRecords.save(true)
   })
-
-  // Save pages cache to file.
-  pageRecords.save()
 }
 
 
