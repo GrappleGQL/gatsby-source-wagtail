@@ -1,4 +1,6 @@
 const path = require('path')
+const flatCache = require('flat-cache')
+const pageRecords = flatCache.load('gatsby-source-wagtail')
 
 export const createWagtailPages = async (pageMap, args, fragmentFiles) => {
     const { cache, actions, graphql } = args
@@ -24,8 +26,7 @@ export const createWagtailPages = async (pageMap, args, fragmentFiles) => {
                 .find(key => key.toLowerCase() == page.contentType.toLowerCase())
             
             const pageCacheKey = `page-${page.id}`
-            const cacheResult = await cache.get(pageCacheKey)
-            console.log(`Pages Result:`, cacheResult)
+            const cacheResult = await pageRecords.getKey(pageCacheKey)
             if (cacheResult) {
                 console.log('USING CACHED VERSION')
                 return;

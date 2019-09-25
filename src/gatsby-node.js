@@ -1,8 +1,11 @@
 const fs = require('fs-extra');
 const request = require('graphql-request')
+const flatCache = require('flat-cache')
 const { sourceNodes } = require('./graphql-nodes');
 const { getRootQuery } = require('./getRootQuery');
 const { generateImageFragments } = require('./fragments')
+
+const pageRecords = flatCache.load('gatsby-source-wagtail')
 
 const queryBackend = (query, url, headers) => fetch(url, {
   method: 'POST',
@@ -19,7 +22,7 @@ exports.onPreInit = ({}, options) => {
   options.typeName = options.typeName || 'wagtail'
 }
 
-const cachePages = async ({ getNodes, cache, actions }, options) => {
+exports.onPreBootstrap = async ({ getNodes, cache, actions }, options) => {
   // Get all pages and see when they were last updated.
   const result = await queryBackend(`
     {
@@ -41,7 +44,7 @@ const cachePages = async ({ getNodes, cache, actions }, options) => {
   // Iterate over each page and check if has changed.
   result.data.pages.map(async page => {
     const pageCacheKey = `page-${page.id}`
-    const cacheResult = await cache.get(pageCacheKey)    
+    const cacheResult = await pageRecords.getKey(pageCacheKey)
 
     // If has cache result then find matching page node.
     if (cacheResult) {
@@ -55,32 +58,27 @@ const cachePages = async ({ getNodes, cache, actions }, options) => {
     }
 
     // Update local cache
-    cache.set(pageCacheKey, page)
-    console.log(`Setting: `, pageCacheKey)
+    pageRecords.setKey(pageCacheKey, page)
   })
+
+  // Save pages cache to file.
+  pageRecords.save()
 }
 
 
 // Stick remote Wagtail schema into local GraphQL endpoint
-exports.sourceNodes = (...args) => {
-  return Promise.all([
-    sourceNodes(...args)
-  ])
-} 
+exports.sourceNodes = sourceNodes
 
-
-exports.createPages = (...args) => {
-  const { page, actions } = args[0]
-  const options = args[1]
-  cachePages(...args)
-
+exports.onCreatePage = ({ page, actions }, options) => {
   const rootQuery = getRootQuery(page.componentPath);
   if (rootQuery) {
     page.context = page.context || {};
     page.context.rootQuery = rootQuery;
     actions.createPage(page);
   }
+}
 
+exports.createPages = ({ page, actions }, options) => {
   queryBackend(`
     {
       __schema {
@@ -105,8 +103,6 @@ exports.createPages = (...args) => {
         }
       });
     });
-
-    return cachePages(...args)
 };
 
 exports.onCreateWebpackConfig = ({ stage, actions, getConfig }) => {
