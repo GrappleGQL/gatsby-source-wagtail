@@ -19,12 +19,7 @@ exports.onPreInit = ({}, options) => {
   options.typeName = options.typeName || 'wagtail'
 }
 
-// Stick remote Wagtail schema into local GraphQL endpoint
-exports.sourceNodes = (...args) => {
-  return sourceNodes(...args)
-} 
-
-exports.onPreBootstrap = async ({ getNodes, cache, actions }, options) => {
+const cachePages = async ({ getNodes, cache, actions }, options) => {
   // Get all pages and see when they were last updated.
   const result = await queryBackend(`
     {
@@ -52,7 +47,7 @@ exports.onPreBootstrap = async ({ getNodes, cache, actions }, options) => {
     if (cacheResult) {
       const node = pageNodes.find(node => node.path == page.url)
       if (node) {
-        console.log(`Result:`, node.id, cacheResult)
+        console.log(`Source Result:`, node.id, cacheResult)
         actions.touchNode({
           nodeId: node.id
         })
@@ -64,7 +59,20 @@ exports.onPreBootstrap = async ({ getNodes, cache, actions }, options) => {
   })
 }
 
-exports.onCreatePage = ({ page, actions }, options) => {
+
+// Stick remote Wagtail schema into local GraphQL endpoint
+exports.sourceNodes = (...args) => {
+  return Promise.all([
+    sourceNodes(...args),
+    cachePages(...args)
+  ])
+} 
+
+
+exports.onCreatePage = (...args) => {
+  const { page, actions } = args[0]
+  const options = args[1]
+
   const rootQuery = getRootQuery(page.componentPath);
   if (rootQuery) {
     page.context = page.context || {};
@@ -96,6 +104,8 @@ exports.onCreatePage = ({ page, actions }, options) => {
         }
       });
     });
+
+    return cachePages(...args)
 };
 
 exports.onCreateWebpackConfig = ({ stage, actions, getConfig }) => {
