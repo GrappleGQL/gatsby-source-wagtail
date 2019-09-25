@@ -23,6 +23,7 @@ exports.onPreInit = ({}, options) => {
 exports.sourceNodes = sourceNodes
 
 exports.onPostBootstrap = async ({ getNodes, cache, actions }, options) => {
+  // Get all pages and see when they were last updated.
   const result = await queryBackend(`
     {
       pages {
@@ -36,11 +37,27 @@ exports.onPostBootstrap = async ({ getNodes, cache, actions }, options) => {
   if (!result.data && result.data.pages)
     return;
 
+  // All pages in Gatsby system
+  const pageNodes = getNodes()
+    .filter(node => node.internal.type == 'SitePage')
+    
+  // Iterate over each page and check if has changed.
   result.data.pages.map(async page => {
     const pageCacheKey = `page-${page.id}`
-    const cacheResult = await cache.get(pageCacheKey)
-    console.log(`Result:`, cacheResult)
-    
+    const cacheResult = await cache.get(pageCacheKey)    
+
+    // If has cache result then find matching page node.
+    if (cacheResult) {
+      const node = pageNodes.find(node => node.path == page.url)
+      if (node) {
+        console.log(`Result:`, node.id, cacheResult)
+        actions.touchNode({
+          nodeId: node.id
+        })
+      }
+    }
+
+    // Update local cache
     cache.set(pageCacheKey, page)
   })
 }
