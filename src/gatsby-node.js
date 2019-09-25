@@ -19,7 +19,31 @@ exports.onPreInit = ({}, options) => {
   options.typeName = options.typeName || 'wagtail'
 }
 
+// Stick remote Wagtail schema into local GraphQL endpoint
 exports.sourceNodes = sourceNodes
+
+exports.onPostBootstrap = async ({ getNodes, cache, actions }, options) => {
+  const result = await queryBackend(`
+    {
+      pages {
+        id
+        url
+      }
+    }
+  `, options.url, options.headers)
+
+  // If no result then stop!
+  if (!result.data && result.data.pages)
+    return;
+
+  result.data.pages.map(async page => {
+    const pageCacheKey = `page-${page.id}`
+    const cacheResult = await cache.get(pageCacheKey)
+    console.log(`Result:`, cacheResult)
+    
+    cache.set(pageCacheKey, page)
+  })
+}
 
 exports.onCreatePage = ({ page, actions }, options) => {
   const rootQuery = getRootQuery(page.componentPath);
