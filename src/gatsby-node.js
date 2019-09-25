@@ -56,6 +56,7 @@ const cachePages = async ({ getNodes, cache, actions }, options) => {
 
     // Update local cache
     cache.set(pageCacheKey, page)
+    console.log(`Setting: `, pageCacheKey)
   })
 }
 
@@ -63,8 +64,7 @@ const cachePages = async ({ getNodes, cache, actions }, options) => {
 // Stick remote Wagtail schema into local GraphQL endpoint
 exports.sourceNodes = (...args) => {
   return Promise.all([
-    sourceNodes(...args),
-    cachePages(...args)
+    sourceNodes(...args)
   ])
 } 
 
@@ -72,6 +72,7 @@ exports.sourceNodes = (...args) => {
 exports.onCreatePage = (...args) => {
   const { page, actions } = args[0]
   const options = args[1]
+  cachePages(...args)
 
   const rootQuery = getRootQuery(page.componentPath);
   if (rootQuery) {
