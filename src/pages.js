@@ -3,7 +3,6 @@ const flatCache = require('flat-cache')
 const pageRecords = flatCache.load('gatsby-source-wagtail')
 
 export const createWagtailPages = async (pageMap, args, fragmentFiles) => {
-    console.log(pageRecords.all())
     const { cache, actions, graphql } = args
     const { createPage } = actions
     const res = await graphql(`
