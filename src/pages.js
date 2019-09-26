@@ -29,7 +29,7 @@ export const createWagtailPages = async (pageMap, args, fragmentFiles) => {
             const pageCacheKey = `page-${page.id}`
             const cacheResult = await pageRecords.getKey(pageCacheKey)
             if (cacheResult) {
-                return;
+                console.log('Using Cache: ', pageCacheKey)
             }
 
             if (matchingKey) {
