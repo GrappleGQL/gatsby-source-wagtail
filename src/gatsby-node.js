@@ -22,7 +22,7 @@ exports.onPreInit = ({}, options) => {
   options.typeName = options.typeName || 'wagtail'
 }
 
-const cachePages = async ({ getNodes, cache, actions }, options) => {
+exports.onPreBootstrap = async ({ getNodes, cache, actions }, options) => {
   // Get all pages and see when they were last updated.
   const result = await queryBackend(`
     {
@@ -66,12 +66,7 @@ const cachePages = async ({ getNodes, cache, actions }, options) => {
 
 
 // Stick remote Wagtail schema into local GraphQL endpoint
-exports.sourceNodes = (...args) => {
-  return Promise.all([
-    sourceNodes(...args),
-    cachePages(...args)
-  ])
-}
+exports.sourceNodes = sourceNodes
 
 exports.onCreatePage = ({ page, actions }, options) => {
   const rootQuery = getRootQuery(page.componentPath);
