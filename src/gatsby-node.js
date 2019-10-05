@@ -21,40 +21,6 @@ exports.onPreInit = ({}, options) => {
 
 exports.sourceNodes = sourceNodes
 
-exports.onCreatePage = ({ page, actions }, options) => {
-  const rootQuery = getRootQuery(page.componentPath);
-  if (rootQuery) {
-    page.context = page.context || {};
-    page.context.rootQuery = rootQuery;
-    actions.createPage(page);
-  }
-
-  queryBackend(`
-    {
-      __schema {
-        types {
-          kind
-          name
-          possibleTypes {
-            name
-          }
-        }
-      }
-    }
-  `, options.url, options.headers).then(result => {
-      // here we're filtering out any type information unrelated to unions or interfaces
-      const filteredData = result.data.__schema.types.filter(
-        type => type.possibleTypes !== null,
-      );
-      result.data.__schema.types = filteredData;
-      fs.writeFile('./node_modules/gatsby-source-wagtail/fragmentTypes.json', JSON.stringify(result.data), err => {
-        if (err) {
-          console.error('Gatsby-source-wagtail: Error writing fragmentTypes file', err);
-        }
-      });
-    });
-};
-
 exports.onCreateWebpackConfig = ({ stage, actions, getConfig }) => {
   const config = getConfig()
   if (stage.indexOf('html') >= 0) {
@@ -95,7 +61,29 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
       newUrl
       isPermanent
     }
+    __schema {
+      types {
+        kind
+        name
+        possibleTypes {
+          name
+        }
+      }
+    }
   }`, options.url, options.headers).then(({ data }) => {
+    
+    // Build schema file for Apollo, here we're filtering out any type information unrelated to unions or interfaces
+    const filteredData = data.__schema.types.filter(type => type.possibleTypes !== null)
+    data.__schema.types = filteredData
+    fs.writeFile('./node_modules/gatsby-source-wagtail/fragmentTypes.json', 
+      JSON.stringify(data), 
+      err => {
+        if (err) {
+          console.error('Gatsby-source-wagtail: Error writing fragmentTypes file', err)
+        }
+      }
+    )
+    
     // Generate Image Fragments for the servers respective image model.
     const program = store.getState().program
     const fragments = generateImageFragments(data.imageType)
