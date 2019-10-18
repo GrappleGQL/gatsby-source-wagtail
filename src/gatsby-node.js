@@ -23,12 +23,14 @@ exports.onPreInit = ({}, options) => {
 }
 
 exports.onPreBootstrap = async ({ getNodes, cache, actions }, options) => {
+  const { touchNode } = actions
   // Get all pages and see when they were last updated.
   const result = await queryBackend(`
     {
       pages {
         id
         url
+        lastPublishedAt
       }
     }
   `, options.url, options.headers)
@@ -42,26 +44,29 @@ exports.onPreBootstrap = async ({ getNodes, cache, actions }, options) => {
     .filter(node => node.internal.type == 'SitePage')
     
   // Iterate over each page and check if has changed.
-  result.data.pages.map(async page => {
-    const pageCacheKey = `page-${page.id}`
+  await Promise.all(result.data.pages.map(async page => {
+    const pageCacheKey = `cache-${page.url}`
     const cacheResult = await pageRecords.getKey(pageCacheKey)
-
-    // If has cache result then find matching page node.
     if (cacheResult) {
-      const node = pageNodes.find(node => node.path == page.url)
-      if (node) {
-        pageRecords.setKey(pageCacheKey, page)
-        actions.touchNode({
-          nodeId: node.id
+        const node = pageNodes.find(node => {
+            if (!node.context)
+                return
+            return node.context.url == page.url
         })
-      } else {
-        pageRecords.removeKey(pageCacheKey)
-      }
+        
+        if (node) {
+            if (node.context.lastPublishedAt == page.lastPublishedAt) {
+              pageRecords.setKey(pageCacheKey, localPublishedAt)
+              return touchNode({
+                nodeId: node.id
+              })
+            }
+        }
     }
-
-    // Update local cache
-    pageRecords.save(true)
-  })
+  }))
+  
+  // Update local cache
+  pageRecords.save(true)
 }
 
 
