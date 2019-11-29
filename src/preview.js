@@ -118,7 +118,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
           authorization: token
         }
       });
-    })
+    }
 
     // Create a WebSocket link:
     let wsLink = null
