@@ -1,7 +1,7 @@
 import React from 'react'
 import qs from "querystring";
 import { cloneDeep, merge } from "lodash";
-import { ApolloClient } from "apollo-client";
+import ApolloClient from "apollo-boost";
 import { InMemoryCache, IntrospectionFragmentMatcher } from "apollo-cache-inmemory";
 import { concat, ApolloLink } from "apollo-link";
 import { HttpLink } from 'apollo-link-http';
@@ -104,7 +104,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
       uri: url
     });
 
-    const authMiddleware = new ApolloLink((operation, forward) => {
+    const createRequest = operation => {
       // Retrieve the authorization token from local storage.
       const username = process.env.GATSBY_AUTH_USER
       const password = process.env.GATSBY_AUTH_PASS
@@ -118,8 +118,6 @@ const PreviewProvider = (query, fragments = '', onNext) => {
           authorization: token
         }
       });
-
-      return forward(operation);
     })
 
     // Create a WebSocket link:
@@ -156,8 +154,9 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     // Create actual client that makes requests
     const cache = new InMemoryCache({ fragmentMatcher });
     const client = new ApolloClient({
-      link: concat(authMiddleware, link),
-      cache
+      link,
+      cache,
+      request: createRequest
     });
 
     // Generate query from exported one in component
