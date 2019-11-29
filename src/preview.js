@@ -5,7 +5,7 @@ import { ApolloClient } from "apollo-client";
 import { InMemoryCache, IntrospectionFragmentMatcher } from "apollo-cache-inmemory";
 import { split } from "apollo-link";
 import { setContext } from "apollo-link-context";
-import { HttpLink } from "apollo-link-http";
+import { createHttpLink } from 'apollo-link-http';
 import { WebSocketLink } from "apollo-link-ws";
 import { getMainDefinition } from "apollo-utilities";
 import { throwServerError } from "apollo-link-http-common";
@@ -101,9 +101,8 @@ const PreviewProvider = (query, fragments = '', onNext) => {
 
   if (content_type && token) {
     // Create an http link:
-    const httpLink = new HttpLink({
-      uri: url,
-      headers
+    const httpLink = createHttpLink({
+      uri: url
     });
 
     // Basic Auth: Use the setContext method to set the HTTP headers.
@@ -113,7 +112,10 @@ const PreviewProvider = (query, fragments = '', onNext) => {
       const password = process.env.GATSBY_AUTH_PASS
 
       return username && password ? {
-        'Authorization': 'Basic ' + btoa(username + ':' + password)
+        headers: {
+          ...headers,
+          'Authorization': 'Basic ' + btoa(username + ':' + password)
+        }
       } : {}
     });
 
