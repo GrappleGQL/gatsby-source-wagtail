@@ -130,7 +130,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
           definition.operation === "subscription"
         );
       },
-      wsLink ? wsLink || httpLink,
+      wsLink ? wsLink : httpLink,
       httpLink
     );
 
