@@ -105,18 +105,10 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     });
 
     const createRequest = operation => {
-      // Retrieve the authorization token from local storage.
-      const username = process.env.GATSBY_AUTH_USER
-      const password = process.env.GATSBY_AUTH_PASS
-      const token = username && password
-        ? 'Basic ' + btoa(username + ':' + password)
-        : ''
-
       // add the authorization to the headers
       operation.setContext({
-        headers: {
-          authorization: token
-        }
+        uri: url,
+        headers
       });
     }
 
