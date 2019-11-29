@@ -4,7 +4,7 @@ import { cloneDeep, merge } from "lodash";
 import { ApolloClient } from "apollo-client";
 import { InMemoryCache, IntrospectionFragmentMatcher } from "apollo-cache-inmemory";
 import { split } from "apollo-link";
-import { ApolloLink } from "apollo-boost";
+import { setContext } from "apollo-link-context";
 import { HttpLink } from "apollo-link-http";
 import { WebSocketLink } from "apollo-link-ws";
 import { getMainDefinition } from "apollo-utilities";
@@ -75,7 +75,7 @@ const generatePreviewQuery = (query, contentType, token, fragments, subscribe = 
     queryDef.selectionSet.selections = pageSelections;
   }
 
-  return `    
+  return `
     ${fragments}
     ${print(query)}
   `;
@@ -91,10 +91,10 @@ export const decodePreviewUrl = () => {
 const PreviewProvider = (query, fragments = '', onNext) => {
   // Extract query from wagtail schema
   const {
-    typeName, 
-    fieldName, url, 
-    websocketUrl, 
-    headers 
+    typeName,
+    fieldName, url,
+    websocketUrl,
+    headers
   } = window.___wagtail.default
   const isolatedQuery = getIsolatedQuery(query, fieldName, typeName);
   const { content_type, token } = decodePreviewUrl();
@@ -106,22 +106,15 @@ const PreviewProvider = (query, fragments = '', onNext) => {
       headers
     });
 
-    // Basic Auth Support:
-    const authLink = new ApolloLink((operation, forward) => {
+    // Basic Auth: Use the setContext method to set the HTTP headers.
+    const authLink = setContext(() => {
       // Retrieve the authorization token from local storage.
       const username = process.env.GATSBY_AUTH_USER
       const password = process.env.GATSBY_AUTH_PASS
-      const authHeaders = username && password ? {
+
+      return username && password ? {
         'Authorization': 'Basic ' + btoa(username + ':' + password)
       } : {}
-    
-      // Use the setContext method to set the HTTP headers.
-      operation.setContext({
-        headers: authHeaders
-      });
-    
-      // Call the next link in the middleware chain.
-      return forward(operation);
     });
 
     // Create a WebSocket link:
