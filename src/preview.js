@@ -140,17 +140,19 @@ const PreviewProvider = (query, fragments = '', onNext) => {
 
     // using the ability to split links, you can send data to each link
     // depending on what kind of operation is being sent
-    const link = split(
-      // split based on operation type
-      ({ query }) => {
-        const definition = getMainDefinition(query);
-        return (
-          definition.kind === "OperationDefinition" &&
-          definition.operation === "subscription"
-        );
-      },
-      wsLink || httpLink,
-      httpLink
+    const link = authLink.concat(
+      split(
+        // split based on operation type
+        ({ query }) => {
+          const definition = getMainDefinition(query);
+          return (
+            definition.kind === "OperationDefinition" &&
+            definition.operation === "subscription"
+          );
+        },
+        wsLink || httpLink,
+        httpLink
+      )
     );
 
     // Loading fragments
