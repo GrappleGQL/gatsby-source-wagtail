@@ -106,8 +106,9 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     });
 
     // Create a WebSocket link:
-    let wsLink
+    let wsLink = null
     if (websocketUrl) {
+      console.log('websocket 1')
       wsLink = new WebSocketLink({
         uri: websocketUrl,
         options: {
@@ -130,7 +131,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
           definition.operation === "subscription"
         );
       },
-      wsLink ? wsLink : httpLink,
+      wsLink || httpLink,
       httpLink
     );
 
@@ -160,6 +161,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
 
     // Subscribe to changes with preview query
     if (websocketUrl) {
+      console.log('websocket 2')
       const previewSubscription = generatePreviewQuery(
         isolatedQuery,
         content_type,
