@@ -3,7 +3,7 @@ import qs from "querystring";
 import { cloneDeep, merge } from "lodash";
 import ApolloClient from "apollo-boost";
 import { InMemoryCache, IntrospectionFragmentMatcher } from "apollo-cache-inmemory";
-import { concat, ApolloLink } from "apollo-link";
+import { split, concat, ApolloLink } from "apollo-link";
 import { HttpLink } from 'apollo-link-http';
 import { WebSocketLink } from "apollo-link-ws";
 import { getMainDefinition } from "apollo-utilities";
