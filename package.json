@@ -1,7 +1,7 @@
 {
   "name": "gatsby-source-wagtail",
   "description": "Gatsby plugin which adds Wagtail Grapple support to Gatsby",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "author": "NathHorrigan <NathHorrigan@gmail.com>",
   "bugs": {
     "url": "https://github.com/NathHorrigan/gatsby-source-wagtail/issues"
