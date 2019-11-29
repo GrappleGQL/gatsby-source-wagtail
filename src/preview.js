@@ -89,27 +89,16 @@ export const decodePreviewUrl = () => {
 
 const PreviewProvider = (query, fragments = '', onNext) => {
   // Extract query from wagtail schema
-  const {typeName, fieldName, url, websocketUrl, headers } = window.___wagtail.default
+  const {
+    typeName, 
+    fieldName, url, 
+    websocketUrl, 
+    headers 
+  } = window.___wagtail.default
   const isolatedQuery = getIsolatedQuery(query, fieldName, typeName);
   const { content_type, token } = decodePreviewUrl();
-  const endpoint = new URL(url)
 
   if (content_type && token) {
-    const previewSubscription = generatePreviewQuery(
-      isolatedQuery,
-      content_type,
-      token,
-      fragments,
-      true
-    );
-    const previewQuery = generatePreviewQuery(
-      isolatedQuery,
-      content_type,
-      token,
-      fragments,
-      false
-    );
-
     // Create an http link:
     const httpLink = new HttpLink({
       uri: url,
@@ -117,15 +106,19 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     });
 
     // Create a WebSocket link:
-    const wsLink = new WebSocketLink({
-      uri: websocketUrl || `ws://${endpoint.host}/subscriptions`,
-      options: {
-        reconnect: true,
-        connectionParams: {
-          headers
+    let wsLink = null
+    if (websocketUrl) {
+      console.log('websocket 1')
+      wsLink = new WebSocketLink({
+        uri: websocketUrl,
+        options: {
+          reconnect: true,
+          connectionParams: {
+            headers
+          }
         }
-      }
-    });
+      });
+    }
 
     // using the ability to split links, you can send data to each link
     // depending on what kind of operation is being sent
@@ -138,7 +131,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
           definition.operation === "subscription"
         );
       },
-      wsLink,
+      wsLink || httpLink,
       httpLink
     );
 
@@ -151,23 +144,44 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     const cache = new InMemoryCache({ fragmentMatcher });
     const client = new ApolloClient({ link, cache });
 
+    // Generate query from exported one in component
+    const previewQuery = generatePreviewQuery(
+      isolatedQuery,
+      content_type,
+      token,
+      fragments,
+      false
+    );
+
     // Get first version of preview to render the template
     client
       .query({ query: getIsolatedQuery(previewQuery) })
       .then(onNext)
       .catch(err => console.log(err));
 
-    // Listen to any changes to update the page
-    client
-      .subscribe({
-        query: getIsolatedQuery(previewSubscription),
-        variables: {}
-      })
-      .subscribe(
-        response => onNext(response),
-        error => console.log(error),
-        complete => console.log(complete)
+    // Subscribe to changes with preview query
+    if (websocketUrl) {
+      console.log('websocket 2')
+      const previewSubscription = generatePreviewQuery(
+        isolatedQuery,
+        content_type,
+        token,
+        fragments,
+        true
       );
+
+      // Listen to any changes to update the page
+      client
+        .subscribe({
+          query: getIsolatedQuery(previewSubscription),
+          variables: {}
+        })
+        .subscribe(
+          response => onNext(response),
+          error => console.log(error),
+          complete => console.log(complete)
+        );
+    }
   }
 };
 
