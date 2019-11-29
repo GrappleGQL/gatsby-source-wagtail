@@ -4,6 +4,7 @@ import { cloneDeep, merge } from "lodash";
 import { ApolloClient } from "apollo-client";
 import { InMemoryCache, IntrospectionFragmentMatcher } from "apollo-cache-inmemory";
 import { split } from "apollo-link";
+import { ApolloLink } from "apollo-boost";
 import { HttpLink } from "apollo-link-http";
 import { WebSocketLink } from "apollo-link-ws";
 import { getMainDefinition } from "apollo-utilities";
@@ -105,10 +106,27 @@ const PreviewProvider = (query, fragments = '', onNext) => {
       headers
     });
 
+    // Basic Auth Support:
+    const authLink = new ApolloLink((operation, forward) => {
+      // Retrieve the authorization token from local storage.
+      const username = process.env.GATSBY_AUTH_USER
+      const password = process.env.GATSBY_AUTH_PASS
+      const authHeaders = username && password ? {
+        'Authorization': 'Basic ' + btoa(username + ':' + password)
+      } : {}
+    
+      // Use the setContext method to set the HTTP headers.
+      operation.setContext({
+        headers: authHeaders
+      });
+    
+      // Call the next link in the middleware chain.
+      return forward(operation);
+    });
+
     // Create a WebSocket link:
     let wsLink = null
     if (websocketUrl) {
-      console.log('websocket 1')
       wsLink = new WebSocketLink({
         uri: websocketUrl,
         options: {
@@ -122,17 +140,19 @@ const PreviewProvider = (query, fragments = '', onNext) => {
 
     // using the ability to split links, you can send data to each link
     // depending on what kind of operation is being sent
-    const link = split(
-      // split based on operation type
-      ({ query }) => {
-        const definition = getMainDefinition(query);
-        return (
-          definition.kind === "OperationDefinition" &&
-          definition.operation === "subscription"
-        );
-      },
-      wsLink || httpLink,
-      httpLink
+    const link = authLink.concat(
+      split(
+        // split based on operation type
+        ({ query }) => {
+          const definition = getMainDefinition(query);
+          return (
+            definition.kind === "OperationDefinition" &&
+            definition.operation === "subscription"
+          );
+        },
+        wsLink || httpLink,
+        httpLink
+      )
     );
 
     // Loading fragments
@@ -161,7 +181,6 @@ const PreviewProvider = (query, fragments = '', onNext) => {
 
     // Subscribe to changes with preview query
     if (websocketUrl) {
-      console.log('websocket 2')
       const previewSubscription = generatePreviewQuery(
         isolatedQuery,
         content_type,
