@@ -3,9 +3,8 @@ import qs from "querystring";
 import { cloneDeep, merge } from "lodash";
 import { ApolloClient } from "apollo-client";
 import { InMemoryCache, IntrospectionFragmentMatcher } from "apollo-cache-inmemory";
-import { split } from "apollo-link";
-import { setContext } from "apollo-link-context";
-import { createHttpLink } from 'apollo-link-http';
+import { concat, ApolloLink } from "apollo-link";
+import { HttpLink } from 'apollo-link-http';
 import { WebSocketLink } from "apollo-link-ws";
 import { getMainDefinition } from "apollo-utilities";
 import { throwServerError } from "apollo-link-http-common";
@@ -101,23 +100,27 @@ const PreviewProvider = (query, fragments = '', onNext) => {
 
   if (content_type && token) {
     // Create an http link:
-    const httpLink = createHttpLink({
+    const httpLink = new HttpLink({
       uri: url
     });
 
-    // Basic Auth: Use the setContext method to set the HTTP headers.
-    const authLink = setContext(() => {
+    const authMiddleware = new ApolloLink((operation, forward) => {
       // Retrieve the authorization token from local storage.
       const username = process.env.GATSBY_AUTH_USER
       const password = process.env.GATSBY_AUTH_PASS
+      const token = username && password
+        ? 'Basic ' + btoa(username + ':' + password)
+        : ''
 
-      return username && password ? {
+      // add the authorization to the headers
+      operation.setContext({
         headers: {
-          ...headers,
-          'Authorization': 'Basic ' + btoa(username + ':' + password)
+          authorization: token
         }
-      } : {}
-    });
+      });
+
+      return forward(operation);
+    })
 
     // Create a WebSocket link:
     let wsLink = null
@@ -125,29 +128,24 @@ const PreviewProvider = (query, fragments = '', onNext) => {
       wsLink = new WebSocketLink({
         uri: websocketUrl,
         options: {
-          reconnect: true,
-          connectionParams: {
-            headers
-          }
+          reconnect: true
         }
       });
     }
 
     // using the ability to split links, you can send data to each link
     // depending on what kind of operation is being sent
-    const link = authLink.concat(
-      split(
-        // split based on operation type
-        ({ query }) => {
-          const definition = getMainDefinition(query);
-          return (
-            definition.kind === "OperationDefinition" &&
-            definition.operation === "subscription"
-          );
-        },
-        wsLink || httpLink,
-        httpLink
-      )
+    const link = split(
+      // split based on operation type
+      ({ query }) => {
+        const definition = getMainDefinition(query);
+        return (
+          definition.kind === "OperationDefinition" &&
+          definition.operation === "subscription"
+        );
+      },
+      wsLink || httpLink,
+      httpLink
     );
 
     // Loading fragments
@@ -157,7 +155,10 @@ const PreviewProvider = (query, fragments = '', onNext) => {
 
     // Create actual client that makes requests
     const cache = new InMemoryCache({ fragmentMatcher });
-    const client = new ApolloClient({ link, cache });
+    const client = new ApolloClient({
+      link: concat(authMiddleware, link),,
+      cache
+    });
 
     // Generate query from exported one in component
     const previewQuery = generatePreviewQuery(
