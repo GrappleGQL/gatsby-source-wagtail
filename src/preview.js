@@ -4,6 +4,7 @@ import { cloneDeep, merge } from "lodash";
 import { ApolloClient } from "apollo-client";
 import { InMemoryCache, IntrospectionFragmentMatcher } from "apollo-cache-inmemory";
 import { split } from "apollo-link";
+import { ApolloLink } from "apollo-boost";
 import { HttpLink } from "apollo-link-http";
 import { WebSocketLink } from "apollo-link-ws";
 import { getMainDefinition } from "apollo-utilities";
@@ -103,6 +104,24 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     const httpLink = new HttpLink({
       uri: url,
       headers
+    });
+
+    // Basic Auth Support:
+    const authLink = new ApolloLink((operation, forward) => {
+      // Retrieve the authorization token from local storage.
+      const username = process.env.GATSBY_AUTH_USER
+      const password = process.env.GATSBY_AUTH_PASS
+      const authHeaders = username && password ? {
+        'Authorization': 'Basic ' + btoa(username + ':' + password)
+      } : {}
+    
+      // Use the setContext method to set the HTTP headers.
+      operation.setContext({
+        headers: authHeaders
+      });
+    
+      // Call the next link in the middleware chain.
+      return forward(operation);
     });
 
     // Create a WebSocket link:
