@@ -109,7 +109,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     let wsLink
     if (websocketUrl) {
       wsLink = new WebSocketLink({
-        uri: websocketUrl
+        uri: websocketUrl,
         options: {
           reconnect: true,
           connectionParams: {
