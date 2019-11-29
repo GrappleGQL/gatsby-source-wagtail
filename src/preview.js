@@ -156,7 +156,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     // Create actual client that makes requests
     const cache = new InMemoryCache({ fragmentMatcher });
     const client = new ApolloClient({
-      link: concat(authMiddleware, link),,
+      link: concat(authMiddleware, link),
       cache
     });
 
