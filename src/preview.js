@@ -148,8 +148,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     const cache = new InMemoryCache({ fragmentMatcher });
     const client = new ApolloClient({
       link: authLink.concat(link),
-      cache,
-      request: createRequest
+      cache
     });
 
     // Generate query from exported one in component
