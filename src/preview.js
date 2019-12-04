@@ -108,7 +108,6 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     const gatsbyHeaders = headers;
     const authLink = setContext((_, { headers }) => {
       return {
-        uri: url,
         headers: {
           ...headers,
           ...gatsbyHeaders,
