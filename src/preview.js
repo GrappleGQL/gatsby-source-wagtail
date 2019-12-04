@@ -1,13 +1,14 @@
 import React from 'react'
 import qs from "querystring";
 import { cloneDeep, merge } from "lodash";
-import ApolloClient from "apollo-boost";
+import ApolloClient from "apollo-client";
 import { InMemoryCache, IntrospectionFragmentMatcher } from "apollo-cache-inmemory";
 import { split, concat, ApolloLink } from "apollo-link";
 import { HttpLink } from 'apollo-link-http';
 import { WebSocketLink } from "apollo-link-ws";
 import { getMainDefinition } from "apollo-utilities";
 import { throwServerError } from "apollo-link-http-common";
+import { setContext } from 'apollo-link-context';
 import { print } from "graphql/language/printer"
 
 import { getIsolatedQuery } from './index'
@@ -104,13 +105,13 @@ const PreviewProvider = (query, fragments = '', onNext) => {
       uri: url
     });
 
-    const createRequest = operation => {
-      // add the authorization to the headers
-      operation.setContext({
-        uri: url,
-        headers
-      });
-    }
+    const gatsbyHeaders = headers;
+    const authLink = setContext((_, { headers }) => {
+      return {
+        ...headers,
+        ...gatsbyHeaders,
+      }
+    })
 
     // Create a WebSocket link:
     let wsLink = null
@@ -146,7 +147,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     // Create actual client that makes requests
     const cache = new InMemoryCache({ fragmentMatcher });
     const client = new ApolloClient({
-      link,
+      link: authLink.concat(link),
       cache,
       request: createRequest
     });
