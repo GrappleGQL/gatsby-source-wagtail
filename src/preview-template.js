@@ -4,7 +4,7 @@ import { query as wagtailBaseFragments } from "../../.cache/fragments/gatsby-sou
 
 class PreviewPage extends React.Component {
   state = {
-    component: () => null,
+    Component: () => null,
     fragments: wagtailBaseFragments.source
   };
 
@@ -39,7 +39,7 @@ class PreviewPage extends React.Component {
 
     const componentFile = require("../../src/" + pageMap[pageMapKey]);
     this.setState({
-      component: withPreview(
+      Component: withPreview(
         componentFile.default,
         componentFile.query,
         this.state.fragments
@@ -48,7 +48,8 @@ class PreviewPage extends React.Component {
   }
 
   render() {
-    return this.state.component
+    const { Component } = this.state
+    return <Component />
   }
 }
 
