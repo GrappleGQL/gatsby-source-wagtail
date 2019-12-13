@@ -8,12 +8,6 @@ class PreviewPage extends React.Component {
     fragments: wagtailBaseFragments.source
   };
 
-  constructor(props) {
-    super(props);
-    this.fetchFragments.bind(this);
-    this.fetchComponents.bind(this);
-  }
-
   componentDidMount() {
     if (typeof window != `undefined`) {
       this.fetchComponent();
@@ -21,7 +15,7 @@ class PreviewPage extends React.Component {
     }
   }
 
-  fetchFragments() {
+  fetchFragments = () => {
     const { fragmentFiles } = this.props.pageContext;
     fragmentFiles.map(file => {
       const mod = require("../../src/" + file);
@@ -46,7 +40,7 @@ class PreviewPage extends React.Component {
         this.state.fragments
       )
     })
-  });
+  }
 
   render() {
     return this.state.component
