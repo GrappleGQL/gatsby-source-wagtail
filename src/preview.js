@@ -69,8 +69,8 @@ const generatePreviewQuery = (query, contentType, token, subscribe = false) => {
   subscriptionQuery.selectionSet.selections = pageSelections;
 
   return {
-    query: queryDef,
-    subscriptionQuery
+    query: `${fragment} ${print(query)}`,
+    subscriptionQuery: `${fragment} ${print(subscriptionQuery)}`,
   }
 };
 
@@ -96,7 +96,6 @@ const PreviewProvider = (query, fragments = '', onNext) => {
   // Create urql client
   const client = createClient({
     url,
-    // fragments: getQuery(fragments),
     exchanges: [
       dedupExchange,
       fetchExchange,
@@ -112,7 +111,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     );
 
     // Get first version of preview to render the template
-    const previewRequest = createRequest(getQuery(query))
+    const previewRequest = createRequest(query)
     pipe(
       client.executeQuery(previewRequest),
       subscribe(({ data, error }) => {
