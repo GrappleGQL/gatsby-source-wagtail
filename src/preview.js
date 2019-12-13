@@ -115,10 +115,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     const previewRequest = createRequest(query)
     pipe(
       client.executeQuery(previewRequest),
-      subscribe(({ data, error }) => {
-        console.log(data, error);
-        onNext(data)
-      })
+      subscribe(({ data, error }) => onNext(data))
     )
   }
 };
@@ -135,9 +132,9 @@ export const withPreview = (WrappedComponent, pageQuery, fragments = '') => {
             : {}
         )
       };
-      PreviewProvider(pageQuery, fragments, res => {
+      PreviewProvider(pageQuery, fragments, data => {
         this.setState({
-          wagtail: merge({}, this.state.wagtail, res.data)
+          wagtail: merge({}, this.state.wagtail, data)
         });
       });
     }
