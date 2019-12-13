@@ -10,8 +10,8 @@ class PreviewPage extends React.Component {
 
   componentDidMount() {
     if (typeof window != `undefined`) {
-      this.fetchComponent();
       this.fetchFragments();
+      this.fetchComponent();
     }
   }
 
