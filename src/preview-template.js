@@ -1,10 +1,12 @@
-/* eslint-disable */
-import React from "react";
+import React, { Suspense } from "react";
 import { decodePreviewUrl, withPreview } from "./preview";
 import { query as wagtailBaseFragments } from "../../.cache/fragments/gatsby-source-wagtail-fragments.js";
 
 class PreviewPage extends React.Component {
-  state = { components: [], fragments: wagtailBaseFragments.source };
+  state = {
+    component: () => null,
+    fragments: wagtailBaseFragments.source
+  };
 
   constructor(props) {
     super(props);
@@ -14,8 +16,8 @@ class PreviewPage extends React.Component {
 
   componentDidMount() {
     if (typeof window != `undefined`) {
+      this.fetchComponent();
       this.fetchFragments();
-      this.fetchComponents();
     }
   }
 
@@ -34,32 +36,20 @@ class PreviewPage extends React.Component {
     })
   }
 
-  fetchComponents() {
+  fetchComponent = () => {
     const { pageMap } = this.props.pageContext;
-    Object.keys(pageMap).map(contentType => {
-      const componentFile = require("../../src/" + pageMap[contentType]);
-      this.setState({
-        components: {
-          ...this.state.components,
-          [contentType.toLowerCase()]: withPreview(
-            componentFile.default,
-            componentFile.query,
-            this.state.fragments
-          )
-        }
-      });
+    const componentFile = require("../../src/" + pageMap[contentType]);
+    this.setState({
+      component: withPreview(
+        componentFile.default,
+        componentFile.query,
+        this.state.fragments
+      )
     })
-  }
+  });
 
   render() {
-    const { content_type } = decodePreviewUrl();
-    if (content_type) {
-      const Component = this.state.components[content_type.toLowerCase()];
-      if (Component) {
-        return <Component />;
-      }
-    }
-    return null;
+    return this.state.component
   }
 }
 
