@@ -1,7 +1,7 @@
 import React from 'react'
 import qs from "querystring";
 import { cloneDeep, merge } from "lodash";
-import { createClient, dedupExchange, fetchExchange } from 'urql';
+import { createClient, createRequest, dedupExchange, fetchExchange } from 'urql';
 import { print } from "graphql/language/printer"
 
 import { getIsolatedQuery } from './index'
@@ -112,6 +112,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     );
 
     // Get first version of preview to render the template
+    const previewRequest = createRequest(previewQuery)
     client
       .executeQuery({ query: previewQuery })
       .then(onNext)
