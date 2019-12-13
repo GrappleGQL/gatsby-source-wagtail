@@ -96,7 +96,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
   // Create urql client
   const client = createClient({
     url,
-    fragments: getQuery(fragments),
+    // fragments: getQuery(fragments),
     exchanges: [
       dedupExchange,
       fetchExchange,
@@ -112,7 +112,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     );
 
     // Get first version of preview to render the template
-    const previewRequest = createRequest(query)
+    const previewRequest = createRequest(query.operation)
     console.log(query, previewRequest)
     pipe(
       client.executeQuery(previewRequest),
