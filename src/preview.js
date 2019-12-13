@@ -1,14 +1,7 @@
 import React from 'react'
 import qs from "querystring";
 import { cloneDeep, merge } from "lodash";
-import ApolloClient from "apollo-client";
-import { InMemoryCache, IntrospectionFragmentMatcher } from "apollo-cache-inmemory";
-import { split, concat, ApolloLink } from "apollo-link";
-import { HttpLink } from 'apollo-link-http';
-import { WebSocketLink } from "apollo-link-ws";
-import { getMainDefinition } from "apollo-utilities";
-import { throwServerError } from "apollo-link-http-common";
-import { setContext } from 'apollo-link-context';
+import { createClient, dedupExchange, fetchExchange } from 'urql';
 import { print } from "graphql/language/printer"
 
 import { getIsolatedQuery } from './index'
@@ -92,67 +85,23 @@ const PreviewProvider = (query, fragments = '', onNext) => {
   // Extract query from wagtail schema
   const {
     typeName,
-    fieldName, url,
+    fieldName,
+    url,
     websocketUrl,
     headers
   } = window.___wagtail.default
   const isolatedQuery = getIsolatedQuery(query, fieldName, typeName);
   const { content_type, token } = decodePreviewUrl();
 
+  const client = createClient({
+    url,
+    exchanges: [
+      dedupExchange,
+      fetchExchange,
+    ],
+  })
+
   if (content_type && token) {
-    // Create an http link:
-    const httpLink = new HttpLink({
-      uri: url
-    });
-
-    const gatsbyHeaders = headers;
-    const authLink = setContext((_, { headers }) => {
-      return {
-        headers: {
-          ...headers,
-          ...gatsbyHeaders,
-        },
-      }
-    })
-
-    // Create a WebSocket link:
-    let wsLink = null
-    if (websocketUrl) {
-      wsLink = new WebSocketLink({
-        uri: websocketUrl,
-        options: {
-          reconnect: true
-        }
-      });
-    }
-
-    // using the ability to split links, you can send data to each link
-    // depending on what kind of operation is being sent
-    const link = split(
-      // split based on operation type
-      ({ query }) => {
-        const definition = getMainDefinition(query);
-        return (
-          definition.kind === "OperationDefinition" &&
-          definition.operation === "subscription"
-        );
-      },
-      wsLink || httpLink,
-      httpLink
-    );
-
-    // Loading fragments
-    const fragmentMatcher = new IntrospectionFragmentMatcher({
-      introspectionQueryResultData
-    });
-
-    // Create actual client that makes requests
-    const cache = new InMemoryCache({ fragmentMatcher });
-    const client = new ApolloClient({
-      link: authLink.concat(link),
-      cache
-    });
-
     // Generate query from exported one in component
     const previewQuery = generatePreviewQuery(
       isolatedQuery,
@@ -164,32 +113,32 @@ const PreviewProvider = (query, fragments = '', onNext) => {
 
     // Get first version of preview to render the template
     client
-      .query({ query: getIsolatedQuery(previewQuery) })
+      .executeQuery({ query: previewQuery })
       .then(onNext)
       .catch(err => console.log(err));
 
     // Subscribe to changes with preview query
-    if (websocketUrl) {
-      const previewSubscription = generatePreviewQuery(
-        isolatedQuery,
-        content_type,
-        token,
-        fragments,
-        true
-      );
+    // if (websocketUrl) {
+    //   const previewSubscription = generatePreviewQuery(
+    //     isolatedQuery,
+    //     content_type,
+    //     token,
+    //     fragments,
+    //     true
+    //   );
 
-      // Listen to any changes to update the page
-      client
-        .subscribe({
-          query: getIsolatedQuery(previewSubscription),
-          variables: {}
-        })
-        .subscribe(
-          response => onNext(response),
-          error => console.log(error),
-          complete => console.log(complete)
-        );
-    }
+    //   // Listen to any changes to update the page
+    //   client
+    //     .subscribe({
+    //       query: getIsolatedQuery(previewSubscription),
+    //       variables: {}
+    //     })
+    //     .subscribe(
+    //       response => onNext(response),
+    //       error => console.log(error),
+    //       complete => console.log(complete)
+    //     );
+    // }
   }
 };
 
@@ -202,6 +151,7 @@ export const withPreview = (WrappedComponent, pageQuery, fragments = '') => {
         wagtail: cloneDeep((props.data) ? props.data.wagtail : {})
       };
       PreviewProvider(pageQuery, fragments, res => {
+        console.log(res)
         this.setState({
           wagtail: merge({}, this.state.wagtail, res.data)
         });
