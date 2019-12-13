@@ -25,7 +25,6 @@ class PreviewPage extends React.Component {
       const mod = require("../../src/" + file);
       Object.keys(mod).map(exportKey => {
         const exportObj = mod[exportKey];
-        console.log(exportObj)
         if (typeof exportObj.source == "string") {
           this.setState({
             fragments: (this.state.fragments += exportObj.source)

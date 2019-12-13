@@ -5,7 +5,7 @@ import { createClient, createRequest, dedupExchange, fetchExchange } from 'urql'
 import { print } from "graphql/language/printer"
 import { pipe, subscribe } from 'wonka'
 
-import { getIsolatedQuery } from './index'
+import { getQuery, getIsolatedQuery } from './index'
 import introspectionQueryResultData from './fragmentTypes.json'
 
 
@@ -96,6 +96,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
   // Create urql client
   const client = createClient({
     url,
+    fragments: getQuery(fragments),
     exchanges: [
       dedupExchange,
       fetchExchange,
@@ -122,7 +123,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
   }
 };
 
-export const withPreview = (WrappedComponent, pageQuery) => {
+export const withPreview = (WrappedComponent, pageQuery, fragments = '') => {
   // ...and returns another component...
   return class extends React.Component {
     constructor(props) {
@@ -130,7 +131,7 @@ export const withPreview = (WrappedComponent, pageQuery) => {
       this.state = {
         wagtail: cloneDeep((props.data) ? props.data.wagtail : {})
       };
-      PreviewProvider(pageQuery, res => {
+      PreviewProvider(pageQuery, fragments, res => {
         this.setState({
           wagtail: merge({}, this.state.wagtail, res.data)
         });
