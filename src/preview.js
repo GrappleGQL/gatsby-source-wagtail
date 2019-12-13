@@ -115,7 +115,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     // Get first version of preview to render the template
     const previewRequest = createRequest(previewQuery)
     pipe(
-      client.executeQuery({ query: previewQuery }),
+      client.executeQuery(previewRequest),
       subscribe(({ data, error }) => {
         console.log(data, error);
         onNext(data)
