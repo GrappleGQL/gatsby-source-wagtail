@@ -3,6 +3,7 @@ import qs from "querystring";
 import { cloneDeep, merge } from "lodash";
 import { createClient, createRequest, dedupExchange, fetchExchange } from 'urql';
 import { print } from "graphql/language/printer"
+import { pipe } from 'wonka'
 
 import { getIsolatedQuery } from './index'
 import introspectionQueryResultData from './fragmentTypes.json'
@@ -113,10 +114,13 @@ const PreviewProvider = (query, fragments = '', onNext) => {
 
     // Get first version of preview to render the template
     const previewRequest = createRequest(previewQuery)
-    client
-      .executeQuery({ query: previewQuery })
-      .then(onNext)
-      .catch(err => console.log(err));
+    pipe(
+      client.executeQuery({ query: previewQuery }),
+      subscribe(({ data, error }) => {
+        console.log(data, error);
+        onNext(data)
+      })
+    )
 
     // Subscribe to changes with preview query
     // if (websocketUrl) {
