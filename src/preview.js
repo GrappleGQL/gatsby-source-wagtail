@@ -3,7 +3,7 @@ import qs from "querystring";
 import { cloneDeep, merge } from "lodash";
 import { createClient, createRequest, dedupExchange, fetchExchange } from 'urql';
 import { print } from "graphql/language/printer"
-import { pipe } from 'wonka'
+import { pipe, subscribe } from 'wonka'
 
 import { getIsolatedQuery } from './index'
 import introspectionQueryResultData from './fragmentTypes.json'
