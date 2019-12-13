@@ -17,7 +17,7 @@ function getGraphqlExpr(t, queryHash, source, ast) {
       t.stringLiteral(source)
     ),
     t.objectProperty(
-      t.identifier('ast')
+      t.identifier('ast'),
       t.objectProperty(ast)
     )
     t.objectMethod(
