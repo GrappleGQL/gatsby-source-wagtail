@@ -9,7 +9,7 @@ import { getQuery, getIsolatedQuery } from './index'
 import introspectionQueryResultData from './fragmentTypes.json'
 
 
-const generatePreviewQuery = (query, contentType, token, subscribe = false) => {
+const generatePreviewQuery = (query, contentType, token, fragments) => {
   // The preview args nessacery for preview backend to find the right model.
   query = cloneDeep(query);
   const previewArgs = [
@@ -69,8 +69,8 @@ const generatePreviewQuery = (query, contentType, token, subscribe = false) => {
   subscriptionQuery.selectionSet.selections = pageSelections;
 
   return {
-    query: `${fragment} ${print(query)}`,
-    subscriptionQuery: `${fragment} ${print(subscriptionQuery)}`,
+    query: `${fragments} ${print(query)}`,
+    subscriptionQuery: `${fragments} ${print(subscriptionQuery)}`,
   }
 };
 
@@ -107,7 +107,8 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     const { query, subscriptionQuery } = generatePreviewQuery(
       isolatedQuery,
       content_type,
-      token
+      token,
+      fragments
     );
 
     // Get first version of preview to render the template
