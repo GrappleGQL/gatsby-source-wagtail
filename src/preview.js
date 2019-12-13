@@ -112,8 +112,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     );
 
     // Get first version of preview to render the template
-    const previewRequest = createRequest(query.operation)
-    console.log(query, previewRequest)
+    const previewRequest = createRequest(getQuery(query))
     pipe(
       client.executeQuery(previewRequest),
       subscribe(({ data, error }) => {
@@ -130,7 +129,11 @@ export const withPreview = (WrappedComponent, pageQuery, fragments = '') => {
     constructor(props) {
       super(props);
       this.state = {
-        wagtail: cloneDeep((props.data) ? props.data.wagtail : {})
+        wagtail: cloneDeep(
+          (props.data)
+            ? props.data.wagtail
+            : {}
+        )
       };
       PreviewProvider(pageQuery, fragments, res => {
         this.setState({
