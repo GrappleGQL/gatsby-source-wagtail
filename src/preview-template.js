@@ -32,7 +32,12 @@ class PreviewPage extends React.Component {
 
   fetchComponent = () => {
     const { pageMap } = this.props.pageContext;
-    const componentFile = require("../../src/" + pageMap[contentType]);
+    const { content_type } = decodePreviewUrl();
+    const pageMapKey = Object
+      .keys(pageMap)
+      .find(key => key.toLowerCase() == content_type.toLowerCase())
+
+    const componentFile = require("../../src/" + pageMap[pageMapKey]);
     this.setState({
       component: withPreview(
         componentFile.default,
