@@ -9,7 +9,7 @@ import { getIsolatedQuery } from './index'
 import introspectionQueryResultData from './fragmentTypes.json'
 
 
-const generatePreviewQuery = (query, contentType, token, fragments, subscribe = false) => {
+const generatePreviewQuery = (query, contentType, token, subscribe = false) => {
   // The preview args nessacery for preview backend to find the right model.
   query = cloneDeep(query);
   const previewArgs = [
@@ -63,16 +63,15 @@ const generatePreviewQuery = (query, contentType, token, fragments, subscribe = 
   });
   pageSelections.map(selection => (selection.arguments = previewArgs));
 
-  // Change query to subcription of requested
-  if (subscribe) {
-    queryDef.operation = "subscription";
-    queryDef.selectionSet.selections = pageSelections;
-  }
+  // Change query to subcription type
+  const subscriptionQuery = cloneDeep(queryDef)
+  subscriptionQuery.operation = "subscription";
+  subscriptionQuery.selectionSet.selections = pageSelections;
 
-  return `
-    ${fragments}
-    ${print(query)}
-  `;
+  return {
+    query: queryDef,
+    subscriptionQuery
+  }
 };
 
 export const decodePreviewUrl = () => {
@@ -94,6 +93,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
   const isolatedQuery = getIsolatedQuery(query, fieldName, typeName);
   const { content_type, token } = decodePreviewUrl();
 
+  // Create urql client
   const client = createClient({
     url,
     exchanges: [
@@ -104,16 +104,14 @@ const PreviewProvider = (query, fragments = '', onNext) => {
 
   if (content_type && token) {
     // Generate query from exported one in component
-    const previewQuery = generatePreviewQuery(
+    const { query, subscriptionQuery } = generatePreviewQuery(
       isolatedQuery,
       content_type,
-      token,
-      fragments,
-      false
+      token
     );
 
     // Get first version of preview to render the template
-    const previewRequest = createRequest(previewQuery)
+    const previewRequest = createRequest(query)
     pipe(
       client.executeQuery(previewRequest),
       subscribe(({ data, error }) => {
@@ -121,33 +119,10 @@ const PreviewProvider = (query, fragments = '', onNext) => {
         onNext(data)
       })
     )
-
-    // Subscribe to changes with preview query
-    // if (websocketUrl) {
-    //   const previewSubscription = generatePreviewQuery(
-    //     isolatedQuery,
-    //     content_type,
-    //     token,
-    //     fragments,
-    //     true
-    //   );
-
-    //   // Listen to any changes to update the page
-    //   client
-    //     .subscribe({
-    //       query: getIsolatedQuery(previewSubscription),
-    //       variables: {}
-    //     })
-    //     .subscribe(
-    //       response => onNext(response),
-    //       error => console.log(error),
-    //       complete => console.log(complete)
-    //     );
-    // }
   }
 };
 
-export const withPreview = (WrappedComponent, pageQuery, fragments = '') => {
+export const withPreview = (WrappedComponent, pageQuery) => {
   // ...and returns another component...
   return class extends React.Component {
     constructor(props) {
@@ -155,8 +130,7 @@ export const withPreview = (WrappedComponent, pageQuery, fragments = '') => {
       this.state = {
         wagtail: cloneDeep((props.data) ? props.data.wagtail : {})
       };
-      PreviewProvider(pageQuery, fragments, res => {
-        console.log(res)
+      PreviewProvider(pageQuery, res => {
         this.setState({
           wagtail: merge({}, this.state.wagtail, res.data)
         });
@@ -165,6 +139,7 @@ export const withPreview = (WrappedComponent, pageQuery, fragments = '') => {
 
     render() {
       const data = merge({}, this.props.data, this.state);
+
       if (data.wagtail.page) {
         return <WrappedComponent {...this.props} data={data} />;
       } else {
