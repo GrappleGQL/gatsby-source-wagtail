@@ -69,6 +69,15 @@ const PreviewProvider = (query, fragments = '', onNext) => {
       client.executeQuery(previewRequest),
       subscribe(({ data, error }) => onNext(data))
     )
+
+    // If setup then run sunscription
+    if (websocketUrl) {
+      const subscriptionRequest = createRequest(subscriptionQuery)
+      pipe(
+        client.executeQuery(subscriptionRequest),
+        subscribe(({ data, error }) => onNext(data))
+      )
+    }
   }
 };
 
