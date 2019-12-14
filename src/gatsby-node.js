@@ -71,26 +71,29 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
       }
     }
   }`, options.url, options.headers).then(({ data }) => {
-    
+
     // Build schema file for Apollo, here we're filtering out any type information unrelated to unions or interfaces
     const filteredData = data.__schema.types.filter(type => type.possibleTypes !== null)
     data.__schema.types = filteredData
-    fs.writeFile('./node_modules/gatsby-source-wagtail/fragmentTypes.json', 
-      JSON.stringify(data), 
+    fs.writeFile('./node_modules/gatsby-source-wagtail/fragmentTypes.json',
+      JSON.stringify(data),
       err => {
         if (err) {
           console.error('Gatsby-source-wagtail: Error writing fragmentTypes file', err)
         }
       }
     )
-    
+
     // Generate Image Fragments for the servers respective image model.
     const program = store.getState().program
     const fragments = generateImageFragments(data.imageType)
     fs.writeFile(
-      `${program.directory}/.cache/fragments/gatsby-source-wagtail-fragments.js`, 
-      fragments, 
-      err => console.error(err)
+      `${program.directory}/.cache/fragments/gatsby-source-wagtail-fragments.js`,
+      fragments,
+      err => {
+        if(err)
+          console.error(err)
+      }
     )
 
     // Generate redirects for Netlify, controlled by Wagtail Admin.

@@ -6,7 +6,7 @@ const nodePath = require(`path`)
 const isGlobalIdentifier = tag =>
   tag.isIdentifier({ name: `graphql` }) && tag.scope.hasGlobal(`graphql`)
 
-function getGraphqlExpr(t, queryHash, source) {
+function getGraphqlExpr(t, queryHash, source, ast) {
   return t.objectExpression([
     t.objectProperty(
       t.identifier('id'),
@@ -219,7 +219,7 @@ export default function({ types: t }) {
 
               // Add query
               path2.replaceWith(
-                getGraphqlExpr(t, this.queryHash, this.query)
+                getGraphqlExpr(t, this.queryHash, this.query, this.ast)
               )
 
               // Add import
@@ -261,7 +261,7 @@ export default function({ types: t }) {
 
           // Replace the query with the hash of the query.
           templatePath.replaceWith(
-            getGraphqlExpr(t, queryHash, text)
+            getGraphqlExpr(t, queryHash, text, ast)
           )
 
           // traverse upwards until we find top-level JSXOpeningElement or Program
@@ -392,7 +392,7 @@ export default function({ types: t }) {
 
             // Replace the query with the hash of the query.
             path2.replaceWith(
-              getGraphqlExpr(t, queryHash, text)
+              getGraphqlExpr(t, queryHash, text, ast)
             )
             return null
           },

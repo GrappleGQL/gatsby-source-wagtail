@@ -1,21 +1,125 @@
 import React from 'react'
 import qs from "querystring";
 import { cloneDeep, merge } from "lodash";
-import ApolloClient from "apollo-client";
-import { InMemoryCache, IntrospectionFragmentMatcher } from "apollo-cache-inmemory";
-import { split, concat, ApolloLink } from "apollo-link";
-import { HttpLink } from 'apollo-link-http';
-import { WebSocketLink } from "apollo-link-ws";
-import { getMainDefinition } from "apollo-utilities";
-import { throwServerError } from "apollo-link-http-common";
-import { setContext } from 'apollo-link-context';
+import { createClient, createRequest, dedupExchange, fetchExchange, subscriptionExchange } from 'urql'
+import { SubscriptionClient } from 'subscriptions-transport-ws'
 import { print } from "graphql/language/printer"
-
-import { getIsolatedQuery } from './index'
+import { pipe, subscribe } from 'wonka'
+import { getQuery, getIsolatedQuery } from './index'
 import introspectionQueryResultData from './fragmentTypes.json'
 
 
-const generatePreviewQuery = (query, contentType, token, fragments, subscribe = false) => {
+const PreviewProvider = (query, fragments = '', onNext) => {
+  // Extract query from wagtail schema
+  const {
+    typeName,
+    fieldName,
+    url,
+    websocketUrl,
+    headers
+  } = window.___wagtail.default
+  const isolatedQuery = getIsolatedQuery(query, fieldName, typeName);
+  const { content_type, token } = decodePreviewUrl();
+
+  // Generate auth token for basic auth.
+  const getToken = () => {
+    const username = process.env.GATSBY_AUTH_USER
+    const password = process.env.GATSBY_AUTH_PASS
+    return btoa(username + ':' + password)
+  }
+
+  // If provided create a subscription endpoint
+  let subscriptionClient
+  if (websocketUrl) {
+    subscriptionClient = new SubscriptionClient(
+      websocketUrl,
+      {
+        reconnect: true,
+        connectionParams: {
+          authToken: getToken()
+        }
+      }
+    );
+  }
+
+  // Create urql client
+  const client = createClient({
+    url,
+    fetchOptions: () => {
+      const token = getToken()
+      return {
+        headers: { authorization: token ? `Basic ${token}` : '' }
+      }
+    },
+    exchanges: [
+      dedupExchange,
+      fetchExchange,
+      subscriptionExchange({
+        forwardSubscription: operation => subscriptionClient.request(operation)
+      })
+    ],
+  })
+
+  if (content_type && token) {
+    // Generate query from exported one in component
+    const { query, subscriptionQuery } = generatePreviewQuery(
+      isolatedQuery,
+      content_type,
+      token,
+      fragments
+    );
+
+    // Get first version of preview to render the template
+    const previewRequest = createRequest(query)
+    pipe(
+      client.executeQuery(previewRequest),
+      subscribe(({ data, error }) => onNext(data))
+    )
+
+    // If setup then run sunscription
+    if (websocketUrl) {
+      const subscriptionRequest = createRequest(subscriptionQuery)
+      pipe(
+        client.executeSubscription(subscriptionRequest),
+        subscribe(({ data, error }) => onNext(data))
+      )
+    }
+  }
+};
+
+export const withPreview = (WrappedComponent, pageQuery, fragments = '') => {
+  // ...and returns another component...
+  return class extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = {
+        wagtail: cloneDeep(
+          (props.data)
+            ? props.data.wagtail
+            : {}
+        )
+      };
+      PreviewProvider(pageQuery, fragments, data => {
+        this.setState({
+          wagtail: merge({}, this.state.wagtail, data)
+        });
+      });
+    }
+
+    render() {
+      const data = merge({}, this.props.data, this.state);
+      if (data.wagtail.page) {
+        return <WrappedComponent {...this.props} data={data} />;
+      } else {
+        return null;
+      }
+    }
+  };
+};
+
+
+
+const generatePreviewQuery = (query, contentType, token, fragments) => {
   // The preview args nessacery for preview backend to find the right model.
   query = cloneDeep(query);
   const previewArgs = [
@@ -69,16 +173,15 @@ const generatePreviewQuery = (query, contentType, token, fragments, subscribe = 
   });
   pageSelections.map(selection => (selection.arguments = previewArgs));
 
-  // Change query to subcription of requested
-  if (subscribe) {
-    queryDef.operation = "subscription";
-    queryDef.selectionSet.selections = pageSelections;
-  }
+  // Change query to subcription type
+  const subscriptionQuery = cloneDeep(queryDef)
+  subscriptionQuery.operation = "subscription";
+  subscriptionQuery.selectionSet.selections = pageSelections;
 
-  return `
-    ${fragments}
-    ${print(query)}
-  `;
+  return {
+    query: `${fragments} ${print(query)}`,
+    subscriptionQuery: `${fragments} ${print(subscriptionQuery)}`,
+  }
 };
 
 export const decodePreviewUrl = () => {
@@ -86,137 +189,6 @@ export const decodePreviewUrl = () => {
     return qs.parse(window.location.search.slice(1));
   }
   return {}
-};
-
-const PreviewProvider = (query, fragments = '', onNext) => {
-  // Extract query from wagtail schema
-  const {
-    typeName,
-    fieldName, url,
-    websocketUrl,
-    headers
-  } = window.___wagtail.default
-  const isolatedQuery = getIsolatedQuery(query, fieldName, typeName);
-  const { content_type, token } = decodePreviewUrl();
-
-  if (content_type && token) {
-    // Create an http link:
-    const httpLink = new HttpLink({
-      uri: url
-    });
-
-    const gatsbyHeaders = headers;
-    const authLink = setContext((_, { headers }) => {
-      return {
-        headers: {
-          ...headers,
-          ...gatsbyHeaders,
-        },
-      }
-    })
-
-    // Create a WebSocket link:
-    let wsLink = null
-    if (websocketUrl) {
-      wsLink = new WebSocketLink({
-        uri: websocketUrl,
-        options: {
-          reconnect: true
-        }
-      });
-    }
-
-    // using the ability to split links, you can send data to each link
-    // depending on what kind of operation is being sent
-    const link = split(
-      // split based on operation type
-      ({ query }) => {
-        const definition = getMainDefinition(query);
-        return (
-          definition.kind === "OperationDefinition" &&
-          definition.operation === "subscription"
-        );
-      },
-      wsLink || httpLink,
-      httpLink
-    );
-
-    // Loading fragments
-    const fragmentMatcher = new IntrospectionFragmentMatcher({
-      introspectionQueryResultData
-    });
-
-    // Create actual client that makes requests
-    const cache = new InMemoryCache({ fragmentMatcher });
-    const client = new ApolloClient({
-      link: authLink.concat(link),
-      cache
-    });
-
-    // Generate query from exported one in component
-    const previewQuery = generatePreviewQuery(
-      isolatedQuery,
-      content_type,
-      token,
-      fragments,
-      false
-    );
-
-    // Get first version of preview to render the template
-    client
-      .query({ query: getIsolatedQuery(previewQuery) })
-      .then(onNext)
-      .catch(err => console.log(err));
-
-    // Subscribe to changes with preview query
-    if (websocketUrl) {
-      const previewSubscription = generatePreviewQuery(
-        isolatedQuery,
-        content_type,
-        token,
-        fragments,
-        true
-      );
-
-      // Listen to any changes to update the page
-      client
-        .subscribe({
-          query: getIsolatedQuery(previewSubscription),
-          variables: {}
-        })
-        .subscribe(
-          response => onNext(response),
-          error => console.log(error),
-          complete => console.log(complete)
-        );
-    }
-  }
-};
-
-export const withPreview = (WrappedComponent, pageQuery, fragments = '') => {
-  // ...and returns another component...
-  return class extends React.Component {
-    constructor(props) {
-      super(props);
-      this.state = {
-        wagtail: cloneDeep((props.data) ? props.data.wagtail : {})
-      };
-      PreviewProvider(pageQuery, fragments, res => {
-        this.setState({
-          wagtail: merge({}, this.state.wagtail, res.data)
-        });
-      });
-    }
-
-    render() {
-      const data = merge({}, this.props.data, this.state);
-      if (data.wagtail.page) {
-        return <WrappedComponent {...this.props} data={data} />;
-      } else {
-        return null;
-      }
-    }
-  };
 };
 
 export default withPreview
