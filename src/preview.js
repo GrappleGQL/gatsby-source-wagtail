@@ -74,7 +74,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     if (websocketUrl) {
       const subscriptionRequest = createRequest(subscriptionQuery)
       pipe(
-        client.executeQuery(subscriptionRequest),
+        client.executeSubscription(subscriptionRequest),
         subscribe(({ data, error }) => onNext(data))
       )
     }
