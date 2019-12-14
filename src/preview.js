@@ -45,6 +45,12 @@ const PreviewProvider = (query, fragments = '', onNext) => {
   // Create urql client
   const client = createClient({
     url,
+    fetchOptions: () => {
+      const token = getToken()
+      return {
+        headers: { authorization: token ? `Basic ${token}` : '' }
+      }
+    },
     exchanges: [
       dedupExchange,
       fetchExchange,
@@ -102,7 +108,6 @@ export const withPreview = (WrappedComponent, pageQuery, fragments = '') => {
 
     render() {
       const data = merge({}, this.props.data, this.state);
-
       if (data.wagtail.page) {
         return <WrappedComponent {...this.props} data={data} />;
       } else {
