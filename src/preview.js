@@ -4,9 +4,104 @@ import { cloneDeep, merge } from "lodash";
 import { createClient, createRequest, dedupExchange, fetchExchange } from 'urql';
 import { print } from "graphql/language/printer"
 import { pipe, subscribe } from 'wonka'
-
 import { getQuery, getIsolatedQuery } from './index'
 import introspectionQueryResultData from './fragmentTypes.json'
+
+
+const PreviewProvider = (query, fragments = '', onNext) => {
+  // Extract query from wagtail schema
+  const {
+    typeName,
+    fieldName,
+    url,
+    websocketUrl,
+    headers
+  } = window.___wagtail.default
+  const isolatedQuery = getIsolatedQuery(query, fieldName, typeName);
+  const { content_type, token } = decodePreviewUrl();
+
+  // Generate auth token for basic auth.
+  const getToken = () => {
+    const username = process.env.GATSBY_AUTH_USER
+    const password = process.env.GATSBY_AUTH_PASS
+    return btoa(username + ':' + password)
+  }
+
+  // If provided create a subscription endpoint
+  let subscriptionClient
+  if (websocketUrl) {
+    subscriptionClient = new SubscriptionClient(
+      websocketUrl,
+      {
+        reconnect: true,
+        connectionParams: {
+          authToken: getToken()
+        }
+      }
+    );
+  }
+
+  // Create urql client
+  const client = createClient({
+    url,
+    exchanges: [
+      dedupExchange,
+      fetchExchange,
+      subscriptionExchange({
+        forwardSubscription: operation => subscriptionClient.request(operation)
+      })
+    ],
+  })
+
+  if (content_type && token) {
+    // Generate query from exported one in component
+    const { query, subscriptionQuery } = generatePreviewQuery(
+      isolatedQuery,
+      content_type,
+      token,
+      fragments
+    );
+
+    // Get first version of preview to render the template
+    const previewRequest = createRequest(query)
+    pipe(
+      client.executeQuery(previewRequest),
+      subscribe(({ data, error }) => onNext(data))
+    )
+  }
+};
+
+export const withPreview = (WrappedComponent, pageQuery, fragments = '') => {
+  // ...and returns another component...
+  return class extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = {
+        wagtail: cloneDeep(
+          (props.data)
+            ? props.data.wagtail
+            : {}
+        )
+      };
+      PreviewProvider(pageQuery, fragments, data => {
+        this.setState({
+          wagtail: merge({}, this.state.wagtail, data)
+        });
+      });
+    }
+
+    render() {
+      const data = merge({}, this.props.data, this.state);
+
+      if (data.wagtail.page) {
+        return <WrappedComponent {...this.props} data={data} />;
+      } else {
+        return null;
+      }
+    }
+  };
+};
+
 
 
 const generatePreviewQuery = (query, contentType, token, fragments) => {
@@ -79,76 +174,6 @@ export const decodePreviewUrl = () => {
     return qs.parse(window.location.search.slice(1));
   }
   return {}
-};
-
-const PreviewProvider = (query, fragments = '', onNext) => {
-  // Extract query from wagtail schema
-  const {
-    typeName,
-    fieldName,
-    url,
-    websocketUrl,
-    headers
-  } = window.___wagtail.default
-  const isolatedQuery = getIsolatedQuery(query, fieldName, typeName);
-  const { content_type, token } = decodePreviewUrl();
-
-  // Create urql client
-  const client = createClient({
-    url,
-    exchanges: [
-      dedupExchange,
-      fetchExchange,
-    ],
-  })
-
-  if (content_type && token) {
-    // Generate query from exported one in component
-    const { query, subscriptionQuery } = generatePreviewQuery(
-      isolatedQuery,
-      content_type,
-      token,
-      fragments
-    );
-
-    // Get first version of preview to render the template
-    const previewRequest = createRequest(query)
-    pipe(
-      client.executeQuery(previewRequest),
-      subscribe(({ data, error }) => onNext(data))
-    )
-  }
-};
-
-export const withPreview = (WrappedComponent, pageQuery, fragments = '') => {
-  // ...and returns another component...
-  return class extends React.Component {
-    constructor(props) {
-      super(props);
-      this.state = {
-        wagtail: cloneDeep(
-          (props.data)
-            ? props.data.wagtail
-            : {}
-        )
-      };
-      PreviewProvider(pageQuery, fragments, data => {
-        this.setState({
-          wagtail: merge({}, this.state.wagtail, data)
-        });
-      });
-    }
-
-    render() {
-      const data = merge({}, this.props.data, this.state);
-
-      if (data.wagtail.page) {
-        return <WrappedComponent {...this.props} data={data} />;
-      } else {
-        return null;
-      }
-    }
-  };
 };
 
 export default withPreview
