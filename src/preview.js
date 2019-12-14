@@ -1,7 +1,8 @@
 import React from 'react'
 import qs from "querystring";
 import { cloneDeep, merge } from "lodash";
-import { createClient, createRequest, dedupExchange, fetchExchange } from 'urql';
+import { createClient, createRequest, dedupExchange, fetchExchange } from 'urql'
+import { SubscriptionClient } from 'subscription-transport-ws'
 import { print } from "graphql/language/printer"
 import { pipe, subscribe } from 'wonka'
 import { getQuery, getIsolatedQuery } from './index'
