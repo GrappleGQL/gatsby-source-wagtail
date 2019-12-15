@@ -48,7 +48,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     fetchOptions: () => {
       const token = getToken()
       return {
-        headers: { authorization: token ? `Basic ${token}` : '' }
+        headers: { "Authorization": token ? `Basic ${token}` : '' }
       }
     },
     exchanges: [
