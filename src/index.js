@@ -1,6 +1,5 @@
 import React from 'react';
 import gql from 'graphql-tag';
-import ApolloClient from 'apollo-boost';
 import traverse from 'traverse';
 import cloneDeep from 'lodash.clonedeep';
 import PropTypes from 'prop-types';
@@ -28,12 +27,7 @@ export const setOptions = (name, opts) => {
   if (!opts.typeName) {
     throw new Error('Wagtail: Could not get "typeName" for "' + name + '".');
   }
-  if (!opts.client) {
-    opts.client = new ApolloClient({
-      uri: opts.url,
-      headers: opts.headers,
-    });
-  }
+
   options.set(name, opts);
 }
 
