@@ -1,7 +1,7 @@
 # gatsby-source-wagtail
 
-> NOTE: This plugin requires that your Wagtail site uses the [Wagtail-Grapple](https://github.com/Torchbox/wagtail-grapple) 
-library to build a compatible GraphQL endpoint. This plugin requires an existing GraphQL endoint and does not work with 
+> NOTE: This plugin requires that your Wagtail site uses the [Wagtail-Grapple](https://github.com/Torchbox/wagtail-grapple)
+library to build a compatible GraphQL endpoint. This plugin requires an existing GraphQL endoint and does not work with
 wagtail out of the box.
 
 ## Features: 🚀
@@ -19,7 +19,7 @@ Just install the package via NPM:
 `npm install gatsby-source-wagtail`
 
 > If you want to use the Gatsby Image fragments then you will need to install the server-side Wagtail library for this also:
-[Wagtail Gatsby](https://github.com/torchbox/wagtail-gatsby).
+[Wagtail Gatsby](https://github.com/nathhorrigan/wagtail-gatsby).
 
 ### Configuration
 
@@ -94,7 +94,7 @@ export const query = graphql`
 `
 ```
 
-As you can see some information about the specific page is passed to page through gatsby's context prop. The following passed 
+As you can see some information about the specific page is passed to page through gatsby's context prop. The following passed
 variables and hence are availble in the templates GraphQL query are:
 
 * $id: Int
