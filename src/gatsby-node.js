@@ -101,7 +101,8 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
       .map(redirect => createRedirect({
         fromPath: redirect.oldPath,
         toPath: redirect.newUrl,
-        isPermanent: redirect.isPermanent
+        isPermanent: redirect.isPermanent,
+        force: true
       }))
   })
 }
