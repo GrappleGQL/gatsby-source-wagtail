@@ -1,6 +1,6 @@
 import React from "react";
 import qs from "querystring";
-import deepmerge from "deepmerge";
+import merge from "deepmerge";
 import {
   createClient,
   createRequest,
