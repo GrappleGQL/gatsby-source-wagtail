@@ -1,6 +1,6 @@
 import React, { Suspense } from "react";
 import { decodePreviewUrl, withPreview } from "./preview";
-import { query as wagtailBaseFragments } from "../../.cache/fragments/gatsby-source-wagtail-fragments.js";
+import { query as wagtailBaseFragments } from "../../../.cache/fragments/gatsby-source-wagtail-fragments.js";
 
 class PreviewPage extends React.Component {
   state = {
@@ -18,7 +18,7 @@ class PreviewPage extends React.Component {
   fetchFragments = () => {
     const { fragmentFiles } = this.props.pageContext;
     fragmentFiles.map(file => {
-      const mod = require("../../src/" + file);
+      const mod = require("../../../src/" + file);
       Object.keys(mod).map(exportKey => {
         const exportObj = mod[exportKey];
         if (typeof exportObj.source == "string") {
@@ -27,29 +27,29 @@ class PreviewPage extends React.Component {
           });
         }
       });
-    })
-  }
+    });
+  };
 
   fetchComponent = () => {
     const { pageMap } = this.props.pageContext;
     const { content_type } = decodePreviewUrl();
-    const pageMapKey = Object
-      .keys(pageMap)
-      .find(key => key.toLowerCase() == content_type.toLowerCase())
+    const pageMapKey = Object.keys(pageMap).find(
+      key => key.toLowerCase() == content_type.toLowerCase()
+    );
 
-    const componentFile = require("../../src/" + pageMap[pageMapKey]);
+    const componentFile = require("../../../src/" + pageMap[pageMapKey]);
     this.setState({
       Component: withPreview(
         componentFile.default,
         componentFile.query,
         this.state.fragments
       )
-    })
-  }
+    });
+  };
 
   render() {
-    const { Component } = this.state
-    return <Component />
+    const { Component } = this.state;
+    return <Component />;
   }
 }
 
