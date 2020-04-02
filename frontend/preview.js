@@ -14,6 +14,9 @@ import { pipe, subscribe } from "wonka";
 import { getQuery, getIsolatedQuery } from "../index";
 import introspectionQueryResultData from "../fragmentTypes.json";
 
+const deepmerge = (a, b, options) =>
+  typeof a == Object && typeof b == Object ? merge(a, b, options) : b;
+
 const PreviewProvider = (query, fragments = "", onNext) => {
   // Extract query from wagtail schema
   const {
@@ -95,17 +98,17 @@ export const withPreview = (WrappedComponent, pageQuery, fragments = "") => {
     constructor(props) {
       super(props);
       this.state = {
-        wagtail: merge(props.data, {})
+        wagtail: deepmerge(props.data, {})
       };
       PreviewProvider(pageQuery, fragments, data => {
         this.setState({
-          wagtail: merge(this.state.wagtail, data)
+          wagtail: deepmerge(this.state.wagtail, data)
         });
       });
     }
 
     render() {
-      const data = merge({}, this.props.data, this.state);
+      const data = deepmerge(this.props.data, this.state);
       // Check if data has been fetched
       if (Object.keys(data.wagtail).length !== 0) {
         return <WrappedComponent {...this.props} data={data} />;
@@ -118,7 +121,7 @@ export const withPreview = (WrappedComponent, pageQuery, fragments = "") => {
 
 const generatePreviewQuery = (query, contentType, token, fragments) => {
   // The preview args nessacery for preview backend to find the right model.
-  query = merge(query, {});
+  query = deepmerge(query, {});
   const previewArgs = [
     {
       kind: "Argument",
@@ -173,7 +176,7 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
     .map(selection => (selection.arguments = previewArgs));
 
   // Change query to subcription type
-  const subscriptionQuery = merge(queryDef, {});
+  const subscriptionQuery = deepmerge(queryDef, {});
   subscriptionQuery.operation = "subscription";
   subscriptionQuery.selectionSet.selections = pageSelections;
 
