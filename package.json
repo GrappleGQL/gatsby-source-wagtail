@@ -1,61 +1,60 @@
 {
-    "name": "gatsby-source-wagtail",
-    "description": "Gatsby plugin which adds Wagtail Grapple support to Gatsby",
-    "version": "0.4.4",
-    "author": "NathHorrigan <NathHorrigan@gmail.com>",
-    "bugs": {
-        "url": "https://github.com/NathHorrigan/gatsby-source-wagtail/issues"
-    },
-    "main": "index.js",
-    "files": [
-        "*.js",
-        "frontend/*.js"
-    ],
-    "dependencies": {
-        "@babel/runtime": "^7.7.6",
-        "deepmerge": "^4.2.2",
-        "fs-extra": "^8.1.0",
-        "gatsby": "^2.13.77",
-        "gatsby-source-graphql": "^2.1.8",
-        "graphql": "^14.5.0",
-        "graphql-tag": "^2.10.0",
-        "graphql-tools": "^3.1.1",
-        "lodash": "^4.17.15",
-        "lodash.clonedeep": "4.5.0",
-        "lodash.get": "^4.4.2",
-        "query-string": "^6.9.0",
-        "react": "^16.12.0",
-        "subscriptions-transport-ws": "^0.9.16",
-        "traverse": "^0.6.6",
-        "urql": "^1.7.0",
-        "wonka": "^3.2.1"
-    },
-    "devDependencies": {
-        "@babel/cli": "^7.7.5",
-        "@babel/core": "^7.7.5",
-        "@babel/plugin-syntax-dynamic-import": "^7.7.4",
-        "babel-preset-gatsby-package": "^0.1.4",
-        "cross-env": "^5.2.1"
-    },
-    "homepage": "https://github.com/NathHorrigan/gatsby-source-wagtail//#readme",
-    "keywords": [
-        "gatsby",
-        "gatsby-plugin",
-        "graphql",
-        "universal"
-    ],
-    "peerDependencies": {
-        "gatsby": "^2.13.77"
-    },
-    "resolutions": {
-        "graphql": "14.5.0"
-    },
-    "license": "MIT",
-    "repository": "https://github.com/NathHorrigan/gatsby-source-wagtail/",
-    "scripts": {
-        "build": "babel gatsby/**/* --out-dir . --ignore **/__tests__",
-        "prepare": "cross-env NODE_ENV=production npm run build",
-        "watch": "babel -w src --out-dir . --ignore **/__tests__",
-        "clean": "rm -rf ./*.js"
-    }
+  "name": "gatsby-source-wagtail",
+  "description": "Gatsby plugin which adds Wagtail Grapple support to Gatsby",
+  "version": "0.4.4",
+  "author": "NathHorrigan <NathHorrigan@gmail.com>",
+  "bugs": {
+    "url": "https://github.com/NathHorrigan/gatsby-source-wagtail/issues"
+  },
+  "main": "index.js",
+  "files": [
+    "*.js",
+    "frontend/*.js"
+  ],
+  "dependencies": {
+    "@babel/runtime": "^7.7.6",
+    "deepmerge": "^4.2.2",
+    "fs-extra": "^8.1.0",
+    "gatsby": "^2.13.77",
+    "gatsby-source-graphql": "^2.1.8",
+    "graphql": "^14.5.0",
+    "graphql-tag": "^2.10.0",
+    "graphql-tools": "^3.1.1",
+    "lodash.clonedeep": "4.5.0",
+    "lodash.merge": "^4.6.2",
+    "query-string": "^6.9.0",
+    "react": "^16.12.0",
+    "subscriptions-transport-ws": "^0.9.16",
+    "traverse": "^0.6.6",
+    "urql": "^1.7.0",
+    "wonka": "^3.2.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.7.5",
+    "@babel/core": "^7.7.5",
+    "@babel/plugin-syntax-dynamic-import": "^7.7.4",
+    "babel-preset-gatsby-package": "^0.1.4",
+    "cross-env": "^5.2.1"
+  },
+  "homepage": "https://github.com/NathHorrigan/gatsby-source-wagtail//#readme",
+  "keywords": [
+    "gatsby",
+    "gatsby-plugin",
+    "graphql",
+    "universal"
+  ],
+  "peerDependencies": {
+    "gatsby": "^2.13.77"
+  },
+  "resolutions": {
+    "graphql": "14.5.0"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/NathHorrigan/gatsby-source-wagtail/",
+  "scripts": {
+    "build": "babel gatsby/**/* --out-dir . --ignore **/__tests__",
+    "prepare": "cross-env NODE_ENV=production npm run build",
+    "watch": "babel -w src --out-dir . --ignore **/__tests__",
+    "clean": "rm -rf ./*.js"
+  }
 }

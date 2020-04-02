@@ -1,6 +1,7 @@
 import React from "react";
 import qs from "querystring";
-import merge from "deepmerge";
+import cloneDeep from "lodash.clonedeep";
+import merge from "lodash.merge";
 import {
   createClient,
   createRequest,
@@ -13,9 +14,6 @@ import { print } from "graphql/language/printer";
 import { pipe, subscribe } from "wonka";
 import { getQuery, getIsolatedQuery } from "../index";
 import introspectionQueryResultData from "../fragmentTypes.json";
-
-const deepmerge = (a, b, options) =>
-  typeof a == Object && typeof b == Object ? merge(a, b, options) : b;
 
 const PreviewProvider = (query, fragments = "", onNext) => {
   // Extract query from wagtail schema
@@ -98,17 +96,17 @@ export const withPreview = (WrappedComponent, pageQuery, fragments = "") => {
     constructor(props) {
       super(props);
       this.state = {
-        wagtail: deepmerge(props.data, {})
+        wagtail: cloneDeep(props.data ? props.data.wagtail : {})
       };
       PreviewProvider(pageQuery, fragments, data => {
         this.setState({
-          wagtail: deepmerge(this.state.wagtail, data)
+          wagtail: merge({}, this.state.wagtail, data)
         });
       });
     }
 
     render() {
-      const data = deepmerge(this.props.data, this.state);
+      const data = merge({}, this.props.data, this.state);
       // Check if data has been fetched
       if (Object.keys(data.wagtail).length !== 0) {
         return <WrappedComponent {...this.props} data={data} />;
@@ -121,7 +119,7 @@ export const withPreview = (WrappedComponent, pageQuery, fragments = "") => {
 
 const generatePreviewQuery = (query, contentType, token, fragments) => {
   // The preview args nessacery for preview backend to find the right model.
-  query = deepmerge(query, {});
+  query = cloneDeep(query);
   const previewArgs = [
     {
       kind: "Argument",
@@ -171,12 +169,13 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
   let pageSelections = queryDef.selectionSet.selections;
   pageSelections
     .filter(selection => {
+      console.log(selection);
       return selection.name.value.toLowerCase() === "page";
     })
     .map(selection => (selection.arguments = previewArgs));
 
   // Change query to subcription type
-  const subscriptionQuery = deepmerge(queryDef, {});
+  const subscriptionQuery = cloneDeep(queryDef);
   subscriptionQuery.operation = "subscription";
   subscriptionQuery.selectionSet.selections = pageSelections;
 
