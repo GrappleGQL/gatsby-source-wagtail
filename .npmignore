@@ -1,0 +1,9 @@
+#tests
+test
+coverage
+
+#editor settings
+.idea
+.editorconfig
+
+gatsby

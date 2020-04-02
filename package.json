@@ -9,7 +9,7 @@
     "main": "index.js",
     "files": [
         "*.js",
-        "index.d.ts"
+        "frontend/*.js"
     ],
     "dependencies": {
         "@babel/runtime": "^7.7.6",
