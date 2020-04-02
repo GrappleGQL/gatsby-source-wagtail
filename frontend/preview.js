@@ -1,6 +1,6 @@
 import React from "react";
 import qs from "querystring";
-import { cloneDeep, merge } from "lodash";
+import deepmerge from "deepmerge";
 import {
   createClient,
   createRequest,
@@ -95,18 +95,19 @@ export const withPreview = (WrappedComponent, pageQuery, fragments = "") => {
     constructor(props) {
       super(props);
       this.state = {
-        wagtail: cloneDeep(props.data ? props.data.wagtail : {})
+        wagtail: merge(props.data, {})
       };
       PreviewProvider(pageQuery, fragments, data => {
         this.setState({
-          wagtail: merge({}, this.state.wagtail, data)
+          wagtail: merge(this.state.wagtail, data)
         });
       });
     }
 
     render() {
       const data = merge({}, this.props.data, this.state);
-      if (data.wagtail.page) {
+      // Check if data has been fetched
+      if (Object.keys(data.wagtail).length !== 0) {
         return <WrappedComponent {...this.props} data={data} />;
       } else {
         return null;
@@ -117,7 +118,7 @@ export const withPreview = (WrappedComponent, pageQuery, fragments = "") => {
 
 const generatePreviewQuery = (query, contentType, token, fragments) => {
   // The preview args nessacery for preview backend to find the right model.
-  query = cloneDeep(query);
+  query = merge(query, {});
   const previewArgs = [
     {
       kind: "Argument",
@@ -164,13 +165,15 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
       We store them as a var because if the query is a subscription we need to remove all
       non-page selections so we override the whole array with just the pages.
     */
-  const pageSelections = queryDef.selectionSet.selections.filter(selection => {
-    return selection.name.value.toLowerCase() === "page";
-  });
-  pageSelections.map(selection => (selection.arguments = previewArgs));
+  let pageSelections = queryDef.selectionSet.selections;
+  pageSelections
+    .filter(selection => {
+      return selection.name.value.toLowerCase() === "page";
+    })
+    .map(selection => (selection.arguments = previewArgs));
 
   // Change query to subcription type
-  const subscriptionQuery = cloneDeep(queryDef);
+  const subscriptionQuery = merge(queryDef, {});
   subscriptionQuery.operation = "subscription";
   subscriptionQuery.selectionSet.selections = pageSelections;
 
