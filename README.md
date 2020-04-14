@@ -71,13 +71,13 @@ Here is an example template:
 ```jsx
 ...
 
-export default BlogPage = ({ data }) => {
+export default ({ data }) => {
   const { page } = data.wagtail
 
   return (
     <div>
       <h1>{ page.title }</h1>
-    <div>
+    </div>
   )
 }
 
