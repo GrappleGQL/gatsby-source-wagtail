@@ -417,9 +417,7 @@ export default function({ types: t }) {
             // See if the query is a variable that's being passed in
             // and if it is, go find it.
             if (
-              hookPath.node.callee.name !== `useStaticQuery` ||
               hookPath.node.arguments.length === 1 &&
-              !hookPath.get(`callee`).referencesImport(`gatsby`)
               hookPath.node.arguments[0].type === `Identifier`
             ) {
               return
@@ -431,10 +429,9 @@ export default function({ types: t }) {
                 })
               }
             }
-
             hookPath.traverse({
               // Assume the query is inline in the component and extract that.
-							TaggedTemplateExpression
+              TaggedTemplateExpression
             })
           },
         })
