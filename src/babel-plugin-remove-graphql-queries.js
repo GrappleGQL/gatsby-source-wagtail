@@ -33,8 +33,8 @@ class StringInterpolationNotAllowedError extends Error {
   constructor(interpolationStart, interpolationEnd) {
     super(
       `BabelPluginRemoveGraphQLQueries: String interpolations are not allowed in graphql ` +
-        `fragments. Included fragments should be referenced ` +
-        `as \`...MyModule_foo\`.`
+      `fragments. Included fragments should be referenced ` +
+      `as \`...MyModule_foo\`.`
     )
     this.interpolationStart = JSON.parse(JSON.stringify(interpolationStart))
     this.interpolationEnd = JSON.parse(JSON.stringify(interpolationEnd))
@@ -156,9 +156,7 @@ function getGraphQLTag(path) {
 
   if (quasis.length !== 1) {
     throw new StringInterpolationNotAllowedError(
-      `BabelPluginRemoveGraphQL: String interpolations are not allowed in graphql ` +
       quasis[0].loc.end,
-        `fragments. Included fragments should be referenced ` +
       quasis[1].loc.start
     )
   }
@@ -176,7 +174,7 @@ function getGraphQLTag(path) {
   } catch (err) {
     throw new Error(
       `BabelPluginRemoveGraphQLQueries: GraphQL syntax error in query:\n\n${text}\n\nmessage:\n\n${
-        err.message
+      err.message
       }`
     )
   }
@@ -195,7 +193,7 @@ function isUseStaticQuery(path) {
   )
 }
 
-export default function({ types: t }) {
+export default function ({ types: t }) {
   return {
     visitor: {
       Program(path, state) {
@@ -227,9 +225,9 @@ export default function({ types: t }) {
                 t.stringLiteral(
                   filename
                     ? nodePath.relative(
-                        nodePath.parse(filename).dir,
-                        resultPath
-                      )
+                      nodePath.parse(filename).dir,
+                      resultPath
+                    )
                     : shortResultPath
                 )
               )
@@ -254,16 +252,12 @@ export default function({ types: t }) {
                 this.templatePath.parentPath.remove()
               }
 
+
               // only remove the import if its like:
-              const importPath = path2.scope.getBinding(`useStaticQuery`).path
               // import { useStaticQuery } from 'gatsby'
-              const parent = importPath.parentPath
               // but not if its like:
-              if (importPath.isImportSpecifier())
               // import * as Gatsby from 'gatsby'
-                if (parent.node.specifiers.length === 1) parent.remove()
               // because we know we can remove the useStaticQuery import,
-                else importPath.remove()
               // but we don't know if other 'gatsby' exports are used, so we
               // cannot remove all 'gatsby' imports.
               if (path2.node.callee.type !== `MemberExpression`) {
@@ -289,9 +283,9 @@ export default function({ types: t }) {
                 t.stringLiteral(
                   filename
                     ? nodePath.relative(
-                        nodePath.parse(filename).dir,
-                        resultPath
-                      )
+                      nodePath.parse(filename).dir,
+                      resultPath
+                    )
                     : shortResultPath
                 )
               )
@@ -374,7 +368,7 @@ export default function({ types: t }) {
                           if (
                             varPath.node.id.name === varName &&
                             varPath.node.init.type ===
-                              `TaggedTemplateExpression`
+                            `TaggedTemplateExpression`
                           ) {
                             varPath.traverse({
                               TaggedTemplateExpression(templatePath) {
@@ -420,7 +414,6 @@ export default function({ types: t }) {
               hookPath.node.arguments.length === 1 &&
               hookPath.node.arguments[0].type === `Identifier`
             ) {
-              return
               const [{ name: varName }] = hookPath.node.arguments
               let binding = hookPath.scope.getBinding(varName)
               if (binding) {
