@@ -4,7 +4,6 @@ exports.generateImageFragments = type => `
     export const query = graphql\`
     
         fragment WagtailImageFixed on ${type} {
-            base64
             width
             height
             src
@@ -16,7 +15,6 @@ exports.generateImageFragments = type => `
             height
             src
             srcSet(sizes: [300, 400, 800, 1400])
-            tracedSVG
         }
 
         fragment WagtailImageFixed_noBase64 on ${type} {
@@ -27,7 +25,6 @@ exports.generateImageFragments = type => `
         }
 
         fragment WagtailImageFluid on ${type} {
-            base64
             aspectRatio
             src
             srcSet(sizes: [300, 400, 800, 1400])
@@ -35,7 +32,6 @@ exports.generateImageFragments = type => `
         }
 
         fragment WagtailImageFluid_tracedSVG on ${type} {
-            tracedSVG
             aspectRatio
             src
             srcSet(sizes: [300, 400, 800, 1400])
