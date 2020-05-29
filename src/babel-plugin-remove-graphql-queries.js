@@ -1,6 +1,7 @@
 /*  eslint-disable new-cap */
 const graphql = require(`gatsby/graphql`)
-const murmurhash = require(`babel-plugin-remove-graphql-queries/murmur`)
+const murmurModule = require(`babel-plugin-remove-graphql-queries/murmur`);
+const murmurhash = typeof murmurModule === 'function' ? murmurModule : murmurModule.murmurhash;
 const nodePath = require(`path`)
 
 const isGlobalIdentifier = tag =>
