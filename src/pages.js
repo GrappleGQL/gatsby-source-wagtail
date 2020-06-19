@@ -32,7 +32,7 @@ export const createWagtailPages = (
         if (matchingKey) {
           const template = pageMap[matchingKey];
           createPage({
-            path: page.url ?? "",
+            path: page.url || "",
             component: path.resolve("./src/" + template),
             context: page,
           });
