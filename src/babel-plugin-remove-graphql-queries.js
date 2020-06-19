@@ -1,6 +1,7 @@
 /*  eslint-disable new-cap */
 const graphql = require(`gatsby/graphql`)
-const murmurhash = require(`babel-plugin-remove-graphql-queries/murmur`)
+const murmurModule = require(`babel-plugin-remove-graphql-queries/murmur`);
+const murmurhash = typeof murmurModule === 'function' ? murmurModule : murmurModule.murmurhash;
 const nodePath = require(`path`)
 
 const isGlobalIdentifier = tag =>
@@ -27,6 +28,37 @@ function getGraphqlExpr(t, queryHash, source, ast) {
       ])
     )
   ])
+}
+
+class StringInterpolationNotAllowedError extends Error {
+  constructor(interpolationStart, interpolationEnd) {
+    super(
+      `BabelPluginRemoveGraphQLQueries: String interpolations are not allowed in graphql ` +
+      `fragments. Included fragments should be referenced ` +
+      `as \`...MyModule_foo\`.`
+    )
+    this.interpolationStart = JSON.parse(JSON.stringify(interpolationStart))
+    this.interpolationEnd = JSON.parse(JSON.stringify(interpolationEnd))
+    Error.captureStackTrace(this, StringInterpolationNotAllowedError)
+  }
+}
+class EmptyGraphQLTagError extends Error {
+  constructor(locationOfGraphqlString) {
+    super(`BabelPluginRemoveGraphQLQueries: Unexpected empty graphql tag.`)
+    this.templateLoc = locationOfGraphqlString
+    Error.captureStackTrace(this, EmptyGraphQLTagError)
+  }
+}
+class GraphQLSyntaxError extends Error {
+  constructor(documentText, originalError, locationOfGraphqlString) {
+    super(
+      `BabelPluginRemoveGraphQLQueries: GraphQL syntax error in query:\n\n${documentText}\n\nmessage:\n\n${originalError}`
+    )
+    this.documentText = documentText
+    this.originalError = originalError
+    this.templateLoc = locationOfGraphqlString
+    Error.captureStackTrace(this, GraphQLSyntaxError)
+  }
 }
 
 function getTagImport(tag) {
@@ -124,10 +156,9 @@ function getGraphQLTag(path) {
   const quasis = path.node.quasi.quasis
 
   if (quasis.length !== 1) {
-    throw new Error(
-      `BabelPluginRemoveGraphQL: String interpolations are not allowed in graphql ` +
-        `fragments. Included fragments should be referenced ` +
-        `as \`...MyModule_foo\`.`
+    throw new StringInterpolationNotAllowedError(
+      quasis[0].loc.end,
+      quasis[1].loc.start
     )
   }
 
@@ -138,19 +169,32 @@ function getGraphQLTag(path) {
     const ast = graphql.parse(text)
 
     if (ast.definitions.length === 0) {
-      throw new Error(`BabelPluginRemoveGraphQL: Unexpected empty graphql tag.`)
+      throw new EmptyGraphQLTagError(quasis[0].loc)
     }
     return { ast, text, hash, isGlobal }
   } catch (err) {
     throw new Error(
       `BabelPluginRemoveGraphQLQueries: GraphQL syntax error in query:\n\n${text}\n\nmessage:\n\n${
-        err.message
+      err.message
       }`
     )
   }
 }
 
-export default function({ types: t }) {
+function isUseStaticQuery(path) {
+  return (
+    (path.node.callee.type === `MemberExpression` &&
+      path.node.callee.property.name === `useStaticQuery` &&
+      path
+        .get(`callee`)
+        .get(`object`)
+        .referencesImport(`gatsby`)) ||
+    (path.node.callee.name === `useStaticQuery` &&
+      path.get(`callee`).referencesImport(`gatsby`))
+  )
+}
+
+export default function ({ types: t }) {
   return {
     visitor: {
       Program(path, state) {
@@ -182,9 +226,9 @@ export default function({ types: t }) {
                 t.stringLiteral(
                   filename
                     ? nodePath.relative(
-                        nodePath.parse(filename).dir,
-                        resultPath
-                      )
+                      nodePath.parse(filename).dir,
+                      resultPath
+                    )
                     : shortResultPath
                 )
               )
@@ -197,8 +241,7 @@ export default function({ types: t }) {
           CallExpression(path2) {
             if (
               [`production`, `test`].includes(process.env.NODE_ENV) &&
-              path2.node.callee.name === `useStaticQuery` &&
-              path2.get(`callee`).referencesImport(`gatsby`)
+              isUseStaticQuery(path2)
             ) {
               const identifier = t.identifier(`staticQueryData`)
               const filename = state.file.opts.filename
@@ -210,12 +253,22 @@ export default function({ types: t }) {
                 this.templatePath.parentPath.remove()
               }
 
-              // Remove imports to useStaticQuery
-              const importPath = path2.scope.getBinding(`useStaticQuery`).path
-              const parent = importPath.parentPath
-              if (importPath.isImportSpecifier())
-                if (parent.node.specifiers.length === 1) parent.remove()
-                else importPath.remove()
+
+              // only remove the import if its like:
+              // import { useStaticQuery } from 'gatsby'
+              // but not if its like:
+              // import * as Gatsby from 'gatsby'
+              // because we know we can remove the useStaticQuery import,
+              // but we don't know if other 'gatsby' exports are used, so we
+              // cannot remove all 'gatsby' imports.
+              if (path2.node.callee.type !== `MemberExpression`) {
+                // Remove imports to useStaticQuery
+                const importPath = path2.scope.getBinding(`useStaticQuery`).path
+                const parent = importPath.parentPath
+                if (importPath.isImportSpecifier())
+                  if (parent.node.specifiers.length === 1) parent.remove()
+                  else importPath.remove()
+              }
 
               // Add query
               path2.replaceWith(
@@ -231,9 +284,9 @@ export default function({ types: t }) {
                 t.stringLiteral(
                   filename
                     ? nodePath.relative(
-                        nodePath.parse(filename).dir,
-                        resultPath
-                      )
+                      nodePath.parse(filename).dir,
+                      resultPath
+                    )
                     : shortResultPath
                 )
               )
@@ -316,7 +369,7 @@ export default function({ types: t }) {
                           if (
                             varPath.node.id.name === varName &&
                             varPath.node.init.type ===
-                              `TaggedTemplateExpression`
+                            `TaggedTemplateExpression`
                           ) {
                             varPath.traverse({
                               TaggedTemplateExpression(templatePath) {
@@ -334,42 +387,45 @@ export default function({ types: t }) {
           },
         })
 
+        function followVariableDeclarations(binding) {
+          const node = binding.path?.node
+          if (
+            node &&
+            node.type === `VariableDeclarator` &&
+            node.id.type === `Identifier` &&
+            node.init.type === `Identifier`
+          ) {
+            return followVariableDeclarations(
+              binding.path.scope.getBinding(node.init.name)
+            )
+          }
+          return binding
+        }
+
         // Traverse once again for useStaticQuery instances
         path.traverse({
           CallExpression(hookPath) {
-            if (
-              hookPath.node.callee.name !== `useStaticQuery` ||
-              !hookPath.get(`callee`).referencesImport(`gatsby`)
-            ) {
-              return
+            if (!isUseStaticQuery(hookPath)) return
+            function TaggedTemplateExpression(templatePath) {
+              setImportForStaticQuery(templatePath)
             }
-
+            // See if the query is a variable that's being passed in
+            // and if it is, go find it.
+            if (
+              hookPath.node.arguments.length === 1 &&
+              hookPath.node.arguments[0].type === `Identifier`
+            ) {
+              const [{ name: varName }] = hookPath.node.arguments
+              let binding = hookPath.scope.getBinding(varName)
+              if (binding) {
+                followVariableDeclarations(binding).path.traverse({
+                  TaggedTemplateExpression,
+                })
+              }
+            }
             hookPath.traverse({
               // Assume the query is inline in the component and extract that.
-              TaggedTemplateExpression(templatePath) {
-                setImportForStaticQuery(templatePath)
-              },
-              // // Also see if it's a variable that's passed in as a prop
-              // // and if it is, go find it.
-              Identifier(identifierPath) {
-                if (identifierPath.node.name !== `graphql`) {
-                  const varName = identifierPath.node.name
-                  path.traverse({
-                    VariableDeclarator(varPath) {
-                      if (
-                        varPath.node.id.name === varName &&
-                        varPath.node.init.type === `TaggedTemplateExpression`
-                      ) {
-                        varPath.traverse({
-                          TaggedTemplateExpression(templatePath) {
-                            setImportForStaticQuery(templatePath)
-                          },
-                        })
-                      }
-                    },
-                  })
-                }
-              },
+              TaggedTemplateExpression
             })
           },
         })
@@ -404,4 +460,9 @@ export default function({ types: t }) {
   }
 }
 
-export { getGraphQLTag }
+export {
+  getGraphQLTag,
+  StringInterpolationNotAllowedError,
+  EmptyGraphQLTagError,
+  GraphQLSyntaxError
+}
