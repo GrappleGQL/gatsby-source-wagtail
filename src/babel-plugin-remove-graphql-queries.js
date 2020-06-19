@@ -270,6 +270,9 @@ export default function({ types: t }) {
                 getGraphqlExpr(t, this.queryHash, this.query)
               )
 
+              path2.replaceWith(t.memberExpression(identifier, t.identifier(`data`)))
+
+
               // Add import
               const importDefaultSpecifier = t.importDefaultSpecifier(
                 identifier
