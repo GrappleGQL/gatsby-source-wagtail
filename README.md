@@ -1,7 +1,7 @@
 # gatsby-source-wagtail
 
 > NOTE: This plugin requires that your Wagtail site uses the [Wagtail-Grapple](https://github.com/Torchbox/wagtail-grapple)
-library to build a compatible GraphQL endpoint. This plugin requires an existing GraphQL endoint and does not work with
+library to build a compatible GraphQL endpoint. This plugin requires an existing GraphQL endpoint and does not work with
 wagtail out of the box.
 
 ## Features: 🚀
@@ -49,11 +49,11 @@ Simply add the package to your `gatsby-config.js` with the url to your Wagtail G
 
 
 ### Page Router
-This source plugin provides an easy to use router that maps a Django model to a specifc Gatsby template. Simply pass a JSON map like
+This source plugin provides an easy to use router that maps a Django model to a specific Gatsby template. Simply pass a JSON map like
 so to the function in your `gatsby-node.js`. This router also adds Wagtail Preview to your Gatsby site automagically! Now just point your backend
 to your Gatsby site and everything will work: [How to link Wagtail & Gatsby](LINK TO BACKEND DOCS).
 
-This maps a Django model with Contentype of `home.BlogPage` to a template located at `./src/templates/blog.js`
+This maps a Django model with ContentType of `home.BlogPage` to a template located at `./src/templates/blog.js`
 
 ```js
 const { createWagtailPages } = require("gatsby-source-wagtail/pages.js")
@@ -95,7 +95,7 @@ export const query = graphql`
 ```
 
 As you can see some information about the specific page is passed to page through gatsby's context prop. The following passed
-variables and hence are availble in the templates GraphQL query are:
+variables and hence are available in the templates GraphQL query are:
 
 * $id: Int
 * $slug: String
@@ -109,7 +109,7 @@ box with Netlify & S3 hosting.
 
 ### Image Fragments
 As mentioned, the library supports Gatsby Image assuming the [Wagtail Gatsby](https://github.com/nathhorrigan/wagtail-gatsby)
-has been installed. The availble image fragments are:
+has been installed. The available image fragments are:
 
 * WagtailImageFixed
 * WagtailImageFixed_tracedSVG
