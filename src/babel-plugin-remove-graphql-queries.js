@@ -7,7 +7,7 @@ const nodePath = require(`path`)
 const isGlobalIdentifier = tag =>
   tag.isIdentifier({ name: `graphql` }) && tag.scope.hasGlobal(`graphql`)
 
-function getGraphqlExpr(t, queryHash, source, ast) {
+function getGraphqlExpr(t, queryHash, source) {
   return t.objectExpression([
     t.objectProperty(
       t.identifier('id'),
@@ -34,8 +34,8 @@ class StringInterpolationNotAllowedError extends Error {
   constructor(interpolationStart, interpolationEnd) {
     super(
       `BabelPluginRemoveGraphQLQueries: String interpolations are not allowed in graphql ` +
-      `fragments. Included fragments should be referenced ` +
-      `as \`...MyModule_foo\`.`
+        `fragments. Included fragments should be referenced ` +
+        `as \`...MyModule_foo\`.`
     )
     this.interpolationStart = JSON.parse(JSON.stringify(interpolationStart))
     this.interpolationEnd = JSON.parse(JSON.stringify(interpolationEnd))
@@ -173,11 +173,7 @@ function getGraphQLTag(path) {
     }
     return { ast, text, hash, isGlobal }
   } catch (err) {
-    throw new Error(
-      `BabelPluginRemoveGraphQLQueries: GraphQL syntax error in query:\n\n${text}\n\nmessage:\n\n${
-      err.message
-      }`
-    )
+    throw new GraphQLSyntaxError(text, err, quasis[0].loc)
   }
 }
 
@@ -194,7 +190,7 @@ function isUseStaticQuery(path) {
   )
 }
 
-export default function ({ types: t }) {
+export default function({ types: t }) {
   return {
     visitor: {
       Program(path, state) {
@@ -226,9 +222,9 @@ export default function ({ types: t }) {
                 t.stringLiteral(
                   filename
                     ? nodePath.relative(
-                      nodePath.parse(filename).dir,
-                      resultPath
-                    )
+                        nodePath.parse(filename).dir,
+                        resultPath
+                      )
                     : shortResultPath
                 )
               )
@@ -253,7 +249,6 @@ export default function ({ types: t }) {
                 this.templatePath.parentPath.remove()
               }
 
-
               // only remove the import if its like:
               // import { useStaticQuery } from 'gatsby'
               // but not if its like:
@@ -272,7 +267,7 @@ export default function ({ types: t }) {
 
               // Add query
               path2.replaceWith(
-                getGraphqlExpr(t, this.queryHash, this.query, this.ast)
+                getGraphqlExpr(t, this.queryHash, this.query)
               )
 
               // Add import
@@ -284,9 +279,9 @@ export default function ({ types: t }) {
                 t.stringLiteral(
                   filename
                     ? nodePath.relative(
-                      nodePath.parse(filename).dir,
-                      resultPath
-                    )
+                        nodePath.parse(filename).dir,
+                        resultPath
+                      )
                     : shortResultPath
                 )
               )
@@ -314,7 +309,7 @@ export default function ({ types: t }) {
 
           // Replace the query with the hash of the query.
           templatePath.replaceWith(
-            getGraphqlExpr(t, queryHash, text, ast)
+            getGraphqlExpr(t, queryHash, text)
           )
 
           // traverse upwards until we find top-level JSXOpeningElement or Program
@@ -369,7 +364,7 @@ export default function ({ types: t }) {
                           if (
                             varPath.node.id.name === varName &&
                             varPath.node.init.type ===
-                            `TaggedTemplateExpression`
+                              `TaggedTemplateExpression`
                           ) {
                             varPath.traverse({
                               TaggedTemplateExpression(templatePath) {
@@ -423,6 +418,7 @@ export default function ({ types: t }) {
                 })
               }
             }
+
             hookPath.traverse({
               // Assume the query is inline in the component and extract that.
               TaggedTemplateExpression
@@ -448,7 +444,7 @@ export default function ({ types: t }) {
 
             // Replace the query with the hash of the query.
             path2.replaceWith(
-              getGraphqlExpr(t, queryHash, text, ast)
+              getGraphqlExpr(t, queryHash, text)
             )
             return null
           },
