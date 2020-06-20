@@ -9,6 +9,7 @@
   "main": "index.js",
   "files": [
     "*.js",
+    "babel-plugin-remove-graphql-queries/*.js",
     "index.d.ts"
   ],
   "dependencies": {
