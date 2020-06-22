@@ -156,7 +156,7 @@ exports.sourceNodes = async (
 
   // Add new merged schema to Gatsby
   addThirdPartySchema({
-    schema: mergeLocalAndRemoteSchema()
+    schema: await mergeLocalAndRemoteSchema()
   });
 
   // Allow refreshing of the remote data in DEV mode only
