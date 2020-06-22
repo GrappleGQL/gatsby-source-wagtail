@@ -1,7 +1,16 @@
 const uuidv4 = require(`uuid/v4`)
-const { buildSchema, printSchema } = require(`graphql`)
+const {
+  buildSchema,
+  printSchema,
+  graphqlSync,
+  introspectionQuery,
+  IntrospectionQuery
+} = require(`graphql`)
+const { fromIntrospectionQuery } = require('graphql-2-json-schema')
+
 const {
   makeRemoteExecutableSchema,
+  delegateToSchema,
   transformSchema,
   introspectSchema,
   RenameTypes,
@@ -127,17 +136,19 @@ exports.sourceNodes = async (
     const customResolvers = {
       Query: {
         pages: async (root, args, context, info) => {
-          console.log('Ticky tock! We have a custom pages resolver...');
-          const res = await info.mergeInfo.delegateToSchema({
-            remoteSchema,
+          const introspection = graphqlSync(schema, introspectionQuery).data;
+          const schemaObject = fromIntrospectionQuery(introspection);
+
+          // console.log(schema.astNode.directives)
+          console.log(schemaObject)
+          const res = await delegateToSchema({
+            schema: remoteSchema,
             operation: 'query',
             fieldName: 'pages',
             args,
             context,
             info
           })
-
-          console.log(res)
 
           return res
         }
