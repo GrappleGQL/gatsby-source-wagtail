@@ -132,33 +132,50 @@ exports.sourceNodes = async (
       ]
   }
 
-  const mergeLocalAndRemoteSchema = () => {
-    const customResolvers = {
+  const mergeLocalAndRemoteSchema = async () => {
+    const customTypes = `
+      extend type CustomImage {
+        file: String
+      }
+    `
+
+    const schemaExtensionResolvers = {
       Query: {
-        pages: async (root, args, context, info) => {
-          const introspection = graphqlSync(schema, introspectionQuery).data;
-          const schemaObject = fromIntrospectionQuery(introspection);
-
-          // console.log(schema.astNode.directives)
-          console.log(schemaObject)
-          const res = await delegateToSchema({
-            schema: remoteSchema,
-            operation: 'query',
-            fieldName: 'pages',
-            args,
-            context,
-            info
-          })
-
-          return res
+        images: {
+          file: async (parent, args, context, info) => {
+            // This should download the image and return a remote file ndoe
+            return `Hello, World`
+          }
         }
       }
-    };
+    }
+
+    // const customResolvers = {
+    //   Query: {
+    //     pages: async (root, args, context, info) => {
+    //       const introspection = graphqlSync(schema, introspectionQuery).data;
+    //       const schemaObject = fromIntrospectionQuery(introspection);
+
+    //       // console.log(schema.astNode.directives)
+    //       console.log(schemaObject)
+    //       const res = await delegateToSchema({
+    //         schema: remoteSchema,
+    //         operation: 'query',
+    //         fieldName: 'pages',
+    //         args,
+    //         context,
+    //         info
+    //       })
+
+    //       return res
+    //     }
+    //   }
+    // };
 
     // merge the schema along with custom resolvers
     const schema = mergeSchemas({
-      schemas: [remoteSchema],
-      resolvers: customResolvers
+      schemas: [remoteSchema, customTypes],
+      resolvers: schemaExtensionResolvers
     })
 
     // Apply any transforms
