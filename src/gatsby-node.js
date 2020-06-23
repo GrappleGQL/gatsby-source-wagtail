@@ -1,5 +1,6 @@
 const fs = require('fs-extra');
 const request = require('graphql-request')
+const { createRemoteFileNode } = require('gatsby-source-filesystem')
 const { sourceNodes } = require('./graphql-nodes');
 const { getRootQuery } = require('./getRootQuery');
 const { generateImageFragments } = require('./fragments')
@@ -104,5 +105,33 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
         isPermanent: redirect.isPermanent,
         force: true
       }))
+  })
+}
+
+exports.createResolvers = ({
+  actions,
+  cache,
+  createNodeId,
+  createResolvers,
+  store,
+  reporter,
+}) => {
+  const { createNode } = actions
+  createResolvers({
+    CustomImage: {
+      imageFile: {
+        type: `File`,
+        resolve(source, args, context, info) {
+          return createRemoteFileNode({
+            url: source.src,
+            store,
+            cache,
+            createNode,
+            createNodeId,
+            reporter,
+          })
+        },
+      },
+    },
   })
 }
