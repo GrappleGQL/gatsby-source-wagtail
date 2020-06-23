@@ -30,6 +30,7 @@
     "subscriptions-transport-ws": "^0.9.16",
     "traverse": "^0.6.6",
     "urql": "^1.7.0",
+    "urql-exchange-schema": "^0.1.0",
     "wonka": "^3.2.1"
   },
   "devDependencies": {

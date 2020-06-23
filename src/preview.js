@@ -4,13 +4,16 @@ import { cloneDeep, merge } from "lodash";
 import { createClient, createRequest, dedupExchange, fetchExchange, subscriptionExchange } from 'urql'
 import { cacheExchange } from '@urql/exchange-graphcache'
 import { SubscriptionClient } from 'subscriptions-transport-ws'
+import { createHttpLink } from 'apollo-link-http'
+import { introspectSchema } from 'graphql-tools'
+import { schemaExchange } from 'urql-exchange-schema'
 import { print } from "graphql/language/printer"
 import { pipe, subscribe } from 'wonka'
 import { getQuery, getIsolatedQuery } from './index'
 import introspectionQueryResultData from './fragmentTypes.json'
 
 
-const PreviewProvider = (query, fragments = '', onNext) => {
+const PreviewProvider = async (query, fragments = '', onNext) => {
   // Extract query from wagtail schema
   const {
     typeName,
@@ -44,28 +47,26 @@ const PreviewProvider = (query, fragments = '', onNext) => {
   }
 
   // Experimental cache to support node image processing
-  const cache = cacheExchange({
-    resolvers: {
-      CustomImage: {
-        imageFile(parent, args, cache, info) {
-          console.log("Hitting image file cache")
-          return null
-        },
-      },
+  const link = createHttpLink({
+    uri: url,
+    fetchOptions: {
+      headers: { "Authorization": token ? `Basic ${getToken()}` : '' }
     },
   })
 
+  // Create a remote link to the Wagtail GraphQL schema
+  const introspectionSchema = await introspectSchema(link)
+  const remoteSchema = makeRemoteExecutableSchema({
+    schema: introspectionSchema,
+    link,
+  })
+
+
   // Create urql client
   const client = createClient({
-    url,
-    fetchOptions: () => {
-      const token = getToken()
-      return {
-        headers: { "Authorization": token ? `Basic ${token}` : '' }
-      }
-    },
+    url: '',
     exchanges: [
-      cache,
+      schemaExchange(remoteSchema),
       dedupExchange,
       fetchExchange,
       subscriptionExchange({
