@@ -42,6 +42,18 @@ const PreviewProvider = (query, fragments = '', onNext) => {
     );
   }
 
+  // Experimental cache to support node image processing
+  const cache = cacheExchange({
+    resolvers: {
+      CustomImage: {
+        imageFile(parent, args, cache, info) {
+          console.log("Hitting image file cache")
+          return null
+        },
+      },
+    },
+  })
+
   // Create urql client
   const client = createClient({
     url,
@@ -52,6 +64,7 @@ const PreviewProvider = (query, fragments = '', onNext) => {
       }
     },
     exchanges: [
+      cache,
       dedupExchange,
       fetchExchange,
       subscriptionExchange({

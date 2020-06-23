@@ -122,14 +122,19 @@ exports.createResolvers = ({
       imageFile: {
         type: `File`,
         resolve(source, args, context, info) {
-          return createRemoteFileNode({
-            url: source.src,
-            store,
-            cache,
-            createNode,
-            createNodeId,
-            reporter,
-          })
+          try {
+            const res = createRemoteFileNode({
+              url: source.src,
+              store,
+              cache,
+              createNode,
+              createNodeId,
+              reporter
+            })
+            return res
+          } catch {
+            return null
+          }
         },
       },
     },
