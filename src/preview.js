@@ -2,6 +2,7 @@ import React from 'react'
 import qs from "querystring";
 import { cloneDeep, merge } from "lodash";
 import { createClient, createRequest, dedupExchange, fetchExchange, subscriptionExchange } from 'urql'
+import { cacheExchange } from '@urql/exchange-graphcache'
 import { SubscriptionClient } from 'subscriptions-transport-ws'
 import { print } from "graphql/language/printer"
 import { pipe, subscribe } from 'wonka'

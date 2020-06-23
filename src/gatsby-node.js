@@ -121,9 +121,9 @@ exports.createResolvers = ({
     CustomImage: {
       imageFile: {
         type: `File`,
-        resolve(source, args, context, info) {
+        async resolve(source, args, context, info) {
           try {
-            const res = createRemoteFileNode({
+            const res = await createRemoteFileNode({
               url: source.src,
               store,
               cache,
