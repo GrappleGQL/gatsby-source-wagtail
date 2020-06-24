@@ -1,14 +1,15 @@
 import React from 'react'
 import qs from "querystring";
 import { cloneDeep, merge } from "lodash";
-import { createClient, createRequest, dedupExchange, fetchExchange, subscriptionExchange } from 'urql'
-import { cacheExchange } from '@urql/exchange-graphcache'
+
+import { ApolloClient } from 'apollo-client';
+import { InMemoryCache } from 'apollo-cache-inmemory';
+import { HttpLink } from 'apollo-link-http';
 import { SubscriptionClient } from 'subscriptions-transport-ws'
 import { createHttpLink } from 'apollo-link-http'
 import { introspectSchema, makeRemoteExecutableSchema, mergeSchemas } from 'graphql-tools'
-import { schemaExchange } from 'urql-exchange-schema'
+
 import { print } from "graphql/language/printer"
-import { pipe, subscribe } from 'wonka'
 import { getQuery, getIsolatedQuery } from './index'
 import introspectionQueryResultData from './fragmentTypes.json'
 
@@ -54,16 +55,8 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
     },
   })
 
-  // Create a remote link to the Wagtail GraphQL schema
-  const introspectionSchema = await introspectSchema(link)
-  const remoteSchema = makeRemoteExecutableSchema({
-    schema: introspectionSchema,
-    link,
-  })
-
   // Mock the fieldName for accessing local image files
-  Error.captureStackTrace = (...args) => console.error(...args)
-  const customTypes = `
+  const typeDefs = `
     extend type CustomImage {
       localFile: File
     }
@@ -83,24 +76,12 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
     }
   }
 
-  const schema = mergeSchemas({
-    schemas: [remoteSchema, customTypes],
-    typeDefs: customTypes,
+  // Create Apollo client
+  const client = new ApolloClient({
+    cache: new InMemoryCache(),
+    link,
+    typeDefs,
     resolvers: schemaExtensionResolvers
-  })
-
-
-  // Create urql client
-  const client = createClient({
-    url,
-    exchanges: [
-      schemaExchange(schema),
-      dedupExchange,
-      fetchExchange,
-      subscriptionExchange({
-        forwardSubscription: operation => subscriptionClient.request(operation)
-      })
-    ],
   })
 
   if (content_type && token) {
@@ -114,19 +95,18 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
 
     // Get first version of preview to render the template
     const previewRequest = createRequest(query)
-    pipe(
-      client.executeQuery(previewRequest),
-      subscribe(({ data, error }) => onNext(data))
-    )
+    client
+      .query({ query: previewRequest })
+      .then(result => onNext(result))
 
     // If setup then run sunscription
-    if (websocketUrl) {
-      const subscriptionRequest = createRequest(subscriptionQuery)
-      pipe(
-        client.executeSubscription(subscriptionRequest),
-        subscribe(({ data, error }) => onNext(data))
-      )
-    }
+    // if (websocketUrl) {
+    //   const subscriptionRequest = createRequest(subscriptionQuery)
+    //   pipe(
+    //     client.executeSubscription(subscriptionRequest),
+    //     subscribe(({ data, error }) => onNext(data))
+    //   )
+    // }
   }
 };
 
