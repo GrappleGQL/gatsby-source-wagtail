@@ -1,6 +1,7 @@
 import React from 'react'
-import qs from "querystring";
-import { cloneDeep, merge } from "lodash";
+import qs from "querystring"
+import { cloneDeep, merge } from "lodash"
+import traverse from 'traverse'
 
 import { ApolloClient } from 'apollo-client'
 import { gql } from "apollo-boost"
@@ -69,10 +70,8 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
 
   const schemaExtensionResolvers = {
     CustomImage: {
-      localFile: () => {
-        return {
-          size: 0
-        }
+      localFile: {
+        size: () => 10
       }
     }
   }
@@ -176,6 +175,20 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
   const queryDef = query.definitions[0];
   queryDef.arguments = []
   queryDef.variableDefinitions = []
+
+  // Add a client directive for images
+  traverse(queryDef).map(node => {
+    if (node?.kind == "Field" && node?.name?.value == "imageFile") {
+      node.directives.push({
+        arguments: [],
+        kind: "Directive",
+        name: {
+          kind: "Name",
+          value: "client"
+        }
+      })
+    }
+  })
 
   if (queryDef.name) {
     queryDef.name.value = "Preview" + queryDef.name.value;
