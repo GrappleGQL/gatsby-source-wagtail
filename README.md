@@ -5,7 +5,7 @@ library to build a compatible GraphQL endpoint. This plugin requires an existing
 wagtail out of the box.
 
 ## Features: 🚀
-* Stitches your Wagtail GraphQL endpoint into your internal Gastby one.
+* Stitches your Wagtail GraphQL endpoint into your internal Gatsby one.
 * Simple router that matches your Django models to Gatsby templates.
 * Redirect support which makes your Wagtail redirects work with sites hosted on Netlify & S3.
 * Out-of-the-box support for Wagtail Preview with realtime updates as you type in the admin.
