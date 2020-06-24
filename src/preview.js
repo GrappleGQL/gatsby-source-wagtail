@@ -2,9 +2,10 @@ import React from 'react'
 import qs from "querystring";
 import { cloneDeep, merge } from "lodash";
 
-import { ApolloClient } from 'apollo-client';
-import { InMemoryCache } from 'apollo-cache-inmemory';
-import { HttpLink } from 'apollo-link-http';
+import { ApolloClient } from 'apollo-client'
+import { gql } from "apollo-boost"
+import { InMemoryCache } from 'apollo-cache-inmemory'
+import { HttpLink } from 'apollo-link-http'
 import { SubscriptionClient } from 'subscriptions-transport-ws'
 import { createHttpLink } from 'apollo-link-http'
 import { introspectSchema, makeRemoteExecutableSchema, mergeSchemas } from 'graphql-tools'
@@ -56,9 +57,9 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
   })
 
   // Mock the fieldName for accessing local image files
-  const typeDefs = `
+  const typeDefs = gql`
     extend type CustomImage {
-      localFile: File
+      localFile: File!
     }
 
     type File {
@@ -68,7 +69,7 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
 
   const schemaExtensionResolvers = {
     CustomImage: {
-      localFile: (parent, args, context, info) => {
+      localFile: () => {
         return {
           size: 0
         }
@@ -94,9 +95,8 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
     );
 
     // Get first version of preview to render the template
-    const previewRequest = createRequest(query)
     client
-      .query({ query: previewRequest })
+      .query({ query: gql([query]) })
       .then(result => onNext(result))
 
     // If setup then run sunscription

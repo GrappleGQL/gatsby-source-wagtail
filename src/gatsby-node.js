@@ -140,3 +140,18 @@ exports.createResolvers = ({
     },
   })
 }
+
+exports.createSchemaCustomization = ({ actions }) => {
+  const { createFieldExtension, createTypes } = actions
+  createFieldExtension({
+    name: "client",
+    extend(options, prevFieldConfig) {
+      return {
+        resolve(source) {
+          console.log(source)
+          return source
+        },
+      }
+    },
+  })
+}
