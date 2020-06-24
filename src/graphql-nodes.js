@@ -133,61 +133,6 @@ exports.sourceNodes = async (
   }
 
   const mergeLocalAndRemoteSchema = async () => {
-    // const customTypes = `
-    //   extend type CustomImage {
-    //     file: String
-    //   }
-    // `
-
-    // const schemaExtensionResolvers = {
-    //   Query: {
-    //     CustomImage: {
-    //       file: async (parent, args, context, info) => {
-    //         // This should download the image and return a remote file ndoe
-    //         if (parent.src == null) {
-    //           console.error(`gatsby-source-graphql: You cannot query the file property without also querying the src property like so:
-    //             {
-    //               ...
-    //               someImageField {
-    //                 src # <--- This is needed!
-    //                 file {
-    //                     # Your local file query
-    //                 }
-    //               }
-    //               ...
-    //             }
-    //           `)
-    //           return null
-    //         }
-
-
-    //       }
-    //     }
-    //   }
-    // }
-
-    // const customResolvers = {
-    //   Query: {
-    //     pages: async (root, args, context, info) => {
-    //       const introspection = graphqlSync(schema, introspectionQuery).data;
-    //       const schemaObject = fromIntrospectionQuery(introspection);
-
-    //       // console.log(schema.astNode.directives)
-    //       console.log(schemaObject)
-    //       const res = await delegateToSchema({
-    //         schema: remoteSchema,
-    //         operation: 'query',
-    //         fieldName: 'pages',
-    //         args,
-    //         context,
-    //         info
-    //       })
-
-    //       return res
-    //     }
-    //   }
-    // };
-
     // merge the schema along with custom resolvers
     const schema = mergeSchemas({
       schemas: [remoteSchema]

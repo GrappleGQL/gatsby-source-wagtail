@@ -5,7 +5,7 @@ import { createClient, createRequest, dedupExchange, fetchExchange, subscription
 import { cacheExchange } from '@urql/exchange-graphcache'
 import { SubscriptionClient } from 'subscriptions-transport-ws'
 import { createHttpLink } from 'apollo-link-http'
-import { introspectSchema } from 'graphql-tools'
+import { introspectSchema, makeRemoteExecutableSchema, mergeSchemas } from 'graphql-tools'
 import { schemaExchange } from 'urql-exchange-schema'
 import { print } from "graphql/language/printer"
 import { pipe, subscribe } from 'wonka'
@@ -61,12 +61,38 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
     link,
   })
 
+  // Mock the fieldName for accessing local image files
+  const customTypes = `
+    extend type CustomImage {
+      localFile: File
+    }
+
+    type File {
+      size: Int!
+    }
+  `
+
+  const schemaExtensionResolvers = {
+    CustomImage: {
+      localFile: (parent, args, context, info) => {
+        return {
+          size: 0
+        }
+      }
+    }
+  }
+
+  const schema = mergeSchemas({
+    schemas: [remoteSchema, customTypes],
+    resolvers: schemaExtensionResolvers
+  })
+
 
   // Create urql client
   const client = createClient({
-    url: '',
+    url,
     exchanges: [
-      schemaExchange(remoteSchema),
+      schemaExchange(schema),
       dedupExchange,
       fetchExchange,
       subscriptionExchange({
