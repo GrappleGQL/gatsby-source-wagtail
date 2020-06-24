@@ -62,6 +62,7 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
   })
 
   // Mock the fieldName for accessing local image files
+  Error.captureStackTrace = (...args) => console.error(...args)
   const customTypes = `
     extend type CustomImage {
       localFile: File
@@ -84,6 +85,7 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
 
   const schema = mergeSchemas({
     schemas: [remoteSchema, customTypes],
+    typeDefs: customTypes,
     resolvers: schemaExtensionResolvers
   })
 
