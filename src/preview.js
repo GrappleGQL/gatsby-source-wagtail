@@ -70,8 +70,11 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
 
   const schemaExtensionResolvers = {
     CustomImage: {
-      localFile: {
-        size: () => 10
+      imageFile: (...args) => {
+        return {
+          __typename: "File",
+          size: 200
+        }
       }
     }
   }
