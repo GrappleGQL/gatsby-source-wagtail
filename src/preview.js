@@ -59,21 +59,101 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
 
   // Mock the fieldName for accessing local image files
   const typeDefs = gql`
-    extend type CustomImage {
-      localFile: File!
+    type File {
+      sourceInstanceName: String!
+      absolutePath: String!
+      relativePath: String!
+      size: Int!
+      prettySize: String!
+      modifiedTime: Date!
+      accessTime: Date!
+      changeTime: Date!
+      root: String!
+      dir: String!
+      base: String!
+      ext: String!
+      name: String!
+      extension: String!
+      relativeDirectory: String!
+      url: String
+      publicUrl: String
+      childImageSharp: ImageSharp
+      id: ID!
+      parent: Node
+      children: [Node!]!
     }
 
-    type File {
-      size: Int!
+    type Node {
+      id: ID!
+    }
+
+    type ImageSharp {
+      id: ID!
+      fluid: ImageSharpFluid!
+    }
+
+    type ImageSharpFluid {
+      aspectRatio: Int!
+      src: String!
+    }
+
+    type ImageSharpFixed {
+      height: Int!
+      width: Int!
+      src: String!
     }
   `
 
   const schemaExtensionResolvers = {
     CustomImage: {
-      imageFile: (...args) => {
+      imageFile: (source) => {
+        // Create a fake date
+        let fileCreatedAt = new Date()
+        let fileCreatedAtISO = fileCreatedAt.toISOString()
+        let fileCreatedAtStamp = fileCreatedAt.getTime()/1000
+
+        // Return a fake file instance
         return {
-          __typename: "File",
-          size: 200
+          "__typename": "File",
+          "sourceInstanceName": "__PROGRAMMATIC__",
+          "relativePath": source.src,
+          "absolutePath": source.src,
+          "changeTime": fileCreatedAtISO,
+          "size": 0,
+          "prettySize": "0 kB",
+          "accessTime": fileCreatedAtISO,
+          "atime": fileCreatedAtISO,
+          "atimeMs": fileCreatedAtStamp,
+          "base": "Artboard.png",
+          "birthTime": fileCreatedAtISO,
+          "birthtimeMs": fileCreatedAtStamp,
+          "ctime": fileCreatedAtISO,
+          "ctimeMs": fileCreatedAtStamp,
+          "dir": source.src,
+          "ext": ".png",
+          "extension": "png",  // TODO:
+          "id": source.id,
+          "publicURL":  source.src,    // TODO:
+          "relativeDirectory": source.src, // TODO:
+          "root": source.src, // TODO:
+          "uid": source.id,
+          "url": source.src,
+          "childImageSharp": { // TODO:
+            __typename: "ImageSharp",
+            fluid: {
+              __typename: "ImageSharpFluid",
+              aspectRatio: source.width / source.height,
+              src: source.src,
+              srcSet: [],
+              sizes: ""
+            },
+            fixed: {
+              __typename: "ImageSharpFixed",
+              height: source.height,
+              width: source.width,
+              src: source.src,
+            }
+          }
         }
       }
     }
@@ -180,9 +260,22 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
   queryDef.variableDefinitions = []
 
   // Add a client directive for images
-  traverse(queryDef).map(node => {
-    if (node?.kind == "Field" && node?.name?.value == "imageFile") {
-      node.directives.push({
+  for (node of traverse(queryDef)) {
+
+    // Get the node of any field attempting to download an image
+    let imageFileNode = null
+    if (node?.kind == "Field" && node
+      ?.selectionSet
+      ?.selections
+      ?.find(selection => selection?.name?.value == "imageFile" && (imageFileNode = selection))) {
+
+      // Make sure we have src, height & width details
+      node.selectionSet.selections.push(createSelection('src'))
+      node.selectionSet.selections.push(createSelection('width'))
+      node.selectionSet.selections.push(createSelection('height'))
+
+      // Make sure it hit's the client side cache
+      imageFileNode.directives.push({
         arguments: [],
         kind: "Directive",
         name: {
@@ -191,7 +284,10 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
         }
       })
     }
-  })
+
+    // Break as we don't need to visit any other nodes
+    break
+  }
 
   if (queryDef.name) {
     queryDef.name.value = "Preview" + queryDef.name.value;
@@ -203,10 +299,10 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
   }
 
   /*
-      Iterate over fields on query and add preview args if it's a page.
-      We store them as a var because if the query is a subscription we need to remove all
-      non-page selections so we override the whole array with just the pages.
-    */
+    Iterate over fields on query and add preview args if it's a page.
+    We store them as a var because if the query is a subscription we need to remove all
+    non-page selections so we override the whole array with just the pages.
+  */
   const pageSelections = queryDef.selectionSet.selections.filter(selection => {
     return selection.name.value.toLowerCase() === "page";
   });
