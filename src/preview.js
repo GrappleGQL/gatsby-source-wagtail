@@ -96,7 +96,7 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
     // Get first version of preview to render the template
     client
       .query({ query: gql([query]) })
-      .then(result => onNext(result))
+      .then(result => onNext(result.data || {}))
 
     // If setup then run sunscription
     // if (websocketUrl) {
