@@ -88,31 +88,138 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
     }
 
     type ImageSharp {
-      id: ID!
       fluid: ImageSharpFluid!
+      fixed: ImageSharpFixed!
     }
 
     type ImageSharpFluid {
-      aspectRatio: Int!
+      base64: String
+      tracedSVG: String
+      aspectRatio: Float!
       src: String!
+      srcSet: String!
+      srcWebp: String
+      srcSetWebp: String
+      sizes: String!
+      originalImg: String
+      originalName: String
+      presentationWidth: Int!
+      presentationHeight: Int!
     }
 
     type ImageSharpFixed {
+      base64: String
+      tracedSVG: String
+      aspectRatio: Float
+      width: Float!
+      height: Float!
+      src: String!
+      srcSet: String!
+      srcWebp: String
+      srcSetWebp: String
+      originalName: String
+    }
+
+    type ImageSharpOriginal {
       height: Int!
       width: Int!
       src: String!
     }
   `
 
-  const schemaExtensionResolvers = {
-    CustomImage: {
-      imageFile: (source) => {
-        // Create a fake date
-        let fileCreatedAt = new Date()
-        let fileCreatedAtISO = fileCreatedAt.toISOString()
-        let fileCreatedAtStamp = fileCreatedAt.getTime()/1000
+  const computeSharpSize = (source, info) => {
+    let imageHeight = source.height
+    let imageWidth = source.width
+    let aspectRatio = imageWidth / imageHeight
 
-        // Return a fake file instance
+    // Convert arguments to set of overrides
+    let imageParams = {}
+    for (let argument of info.field.arguments) {
+      imageParams[argument.name?.value] = argument.value?.value
+    }
+
+    console.log(imageParams)
+
+    // Allow resizing in the browser
+    if (imageParams.height && imageParams.width) {
+      imageHeight = imageParams.height
+      imageWidth = imageParams.width
+      aspectRatio = imageWidth / imageHeight
+    }
+    // If one is set
+    else if (imageParams.height) {
+      imageHeight = imageParams.height
+      imageWidth = imageParams.height * aspectRatio
+    }
+    else if (imageParams.width) {
+      imageHeight = imageParams.width / aspectRatio
+      imageWidth = imageParams.width
+    }
+
+    return {
+      imageHeight: Number(imageHeight),
+      imageWidth: Number(imageWidth),
+      aspectRatio
+    }
+  }
+
+  const schemaExtensionResolvers = {
+    ImageSharp: {
+      fixed: (root, args, context, info) => {
+        const source = root.fixed.parent
+        const {
+          imageWidth,
+          imageHeight,
+          aspectRatio
+        } = computeSharpSize(source, info)
+
+        return {
+          __typename: "ImageSharpFixed",
+          base64: "",
+          tracedSVG: "",
+          aspectRatio,
+          width: imageWidth,
+          height: imageHeight,
+          src: source.src,
+          srcSet: "",
+          srcWebp: "",
+          srcSetWebp: "",
+          originalName: ""
+        }
+      },
+      fluid: () => (root, args, context, info) => {
+        const source = root.fluid.parent
+        console.log(source, info)
+        const {
+          imageWidth,
+          imageHeight,
+          aspectRatio
+        } = computeSharpSize(source, info)
+
+        return {
+          __typename: "ImageSharpFluid",
+          base64: "",
+          tracedSVG: "",
+          aspectRatio,
+          src: source.src,
+          srcSet: "",
+          srcWebp: null,
+          srcSetWebp: null,
+          sizes: "",
+          originalImg: source.src,
+          originalName: "",
+          presentationWidth: source.width,
+          presentationHeight: source.height
+        }
+      },
+    },
+    CustomImage: {
+      imageFile: (source, args, context, info) => {
+        // Create a fake date
+        let fileCreatedAt = new Date();
+        let fileCreatedAtISO = fileCreatedAt.toISOString();
+        let fileCreatedAtStamp = fileCreatedAt.getTime() / 1000; // Return a fake file instance
+
         return {
           "__typename": "File",
           "sourceInstanceName": "__PROGRAMMATIC__",
@@ -131,27 +238,33 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
           "ctimeMs": fileCreatedAtStamp,
           "dir": source.src,
           "ext": ".png",
-          "extension": "png",  // TODO:
+          "extension": "png",
+          // TODO:
           "id": source.id,
-          "publicURL":  source.src,    // TODO:
-          "relativeDirectory": source.src, // TODO:
-          "root": source.src, // TODO:
+          "publicURL": source.src,
+          // TODO:
+          "relativeDirectory": source.src,
+          // TODO:
+          "root": source.src,
+          // TODO:
           "uid": source.id,
           "url": source.src,
-          "childImageSharp": { // TODO:
+          "childImageSharp": {
+            // TODO:
             __typename: "ImageSharp",
             fluid: {
               __typename: "ImageSharpFluid",
-              aspectRatio: source.width / source.height,
-              src: source.src,
-              srcSet: [],
-              sizes: ""
+              parent: source
             },
             fixed: {
               __typename: "ImageSharpFixed",
+              parent: source
+            },
+            original: {
+              __typename: "ImageSharpOriginal",
               height: source.height,
               width: source.width,
-              src: source.src,
+              src: source.src
             }
           }
         }
@@ -259,9 +372,19 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
   queryDef.arguments = []
   queryDef.variableDefinitions = []
 
-  // Add a client directive for images
-  for (node of traverse(queryDef)) {
+  // Use for creating extra fields on a query
+  const createSelection = name => ({
+    "kind": "Field",
+    "name": {
+      "kind": "Name",
+      "value": name,
+    },
+    "arguments": [],
+    "directives": []
+  })
 
+  // Alter the query so that we can execute it properly
+  for (let node of traverse(queryDef).nodes()) {
     // Get the node of any field attempting to download an image
     let imageFileNode = null
     if (node?.kind == "Field" && node
@@ -283,10 +406,10 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
           value: "client"
         }
       })
-    }
 
-    // Break as we don't need to visit any other nodes
-    break
+      // Break as we don't need to visit any other nodes
+      break
+    }
   }
 
   if (queryDef.name) {
