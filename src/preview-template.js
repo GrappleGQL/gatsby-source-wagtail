@@ -1,42 +1,32 @@
 import React, { Suspense } from "react";
-import { decodePreviewUrl, withPreview } from "./preview.boilerplate";
+import { decodePreviewUrl, withPreview } from "./preview";
 import { query as wagtailBaseFragments } from "../../.cache/fragments/gatsby-source-wagtail-fragments.js";
+import sharpImageFragments from "gatsby-transformer-sharp/src/fragments.js"
 
 class PreviewPage extends React.Component {
   state = {
     Component: () => null,
-    fragments: wagtailBaseFragments?.source
+    fragments: wagtailBaseFragments?.source || ""
   };
 
   // Also import these fragments
   internalFragmentFiles = [
-    "gatsby-transformer-sharp/src/fragments.js"
+    sharpImageFragments
   ]
 
   componentDidMount() {
     if (typeof window != `undefined`) {
-      this.fetchFragments();
-
       // Fetch the fragment files specified by the user
       const { fragmentFiles } = this.props.pageContext;
-      this.fetchComponent(fragmentFiles);
-
-      /*
-        Fetch the fragment files specified by me
-        Using try/catch because I can't assume they have these plugins installed.
-        The above I want to fail if they pass the wrong filename
-      */
-      try {
-        this.fetchComponent(this.internalFragmentFiles);
-      } catch(e) {
-        console.log("Could not load internal specified fragments:", this.internalFragmentFiles)
-      }
+      this.fetchFragments(fragmentFiles.map(file => require("../../src/" + file)));
+      // Fetch the fragment files specified by me
+      this.fetchComponent(this.internalFragmentFiles);
+      this.fetchComponent();
     }
   }
 
-  fetchFragments = (fragmentFiles) => {
-    fragmentFiles.map(file => {
-      const mod = require("../../src/" + file);
+  fetchFragments = fragmentModules => {
+    fragmentModules.map(mod => {
       Object.keys(mod).map(exportKey => {
         const exportObj = mod[exportKey];
         if (typeof exportObj.source == "string") {

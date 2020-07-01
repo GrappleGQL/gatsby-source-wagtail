@@ -19,11 +19,16 @@ const {
 const { createHttpLink } = require(`apollo-link-http`)
 const fetch = require(`node-fetch`)
 const invariant = require(`invariant`)
+const traverse = require(`traverse`)
 
 const {
   NamespaceUnderFieldTransform,
   StripNonQueryTransform,
 } = require(`gatsby-source-graphql/transforms`)
+
+const {
+  createSelection
+} = require(`./utils`)
 
 exports.sourceNodes = async (
   { actions, createNodeId, cache, createContentDigest },
@@ -109,6 +114,27 @@ exports.sourceNodes = async (
     return {}
   }
 
+  class WagtailRequestTransformer {
+    transformSchema = schema => schema
+    transformRequest = request => {
+      for (let node of traverse(request.document.definitions).nodes()) {
+        if (node?.kind == "Field" && node
+          ?.selectionSet
+          ?.selections
+          ?.find(selection => selection?.name?.value == "imageFile")) {
+          // Make sure we have src, height & width details
+          node.selectionSet.selections.push(createSelection('id'))
+          node.selectionSet.selections.push(createSelection('src'))
+          // Break as we don't need to visit any other nodes
+          break
+        }
+      }
+
+      return request
+    }
+    transformResult = result => result
+  }
+
   // Add some customization of the remote schema
   let transforms = []
   if (options.prefixTypename) {
@@ -120,6 +146,7 @@ exports.sourceNodes = async (
           fieldName,
           resolver,
         }),
+        new WagtailRequestTransformer()
       ]
   } else {
     transforms = [
@@ -129,6 +156,7 @@ exports.sourceNodes = async (
           fieldName,
           resolver,
         }),
+        new WagtailRequestTransformer(),
       ]
   }
 

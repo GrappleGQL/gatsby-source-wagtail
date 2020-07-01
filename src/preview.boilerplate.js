@@ -16,7 +16,7 @@ import { introspectSchema, makeRemoteExecutableSchema, mergeSchemas } from 'grap
 import { print } from "graphql/language/printer"
 import { getQuery, getIsolatedQuery } from './index'
 import introspectionQueryResultData from './fragmentTypes.json'
-
+import { createSelection } from './utils'
 
 const PreviewProvider = async (query, fragments = '', onNext) => {
   // Extract query from wagtail schema
@@ -385,19 +385,8 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
   queryDef.arguments = []
   queryDef.variableDefinitions = []
 
-  // Use for creating extra fields on a query
-  const createSelection = name => ({
-    "kind": "Field",
-    "name": {
-      "kind": "Name",
-      "value": name,
-    },
-    "arguments": [],
-    "directives": []
-  })
-
   // Alter the query so that we can execute it properly
-  for (let node of traverse(queryDef).nodes()) {
+  for (let node of traverse(query).nodes()) {
     // Get the node of any field attempting to download an image
     let imageFileNode = null
     if (node?.kind == "Field" && node
@@ -450,8 +439,15 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
   subscriptionQuery.operation = "subscription";
   subscriptionQuery.selectionSet.selections = pageSelections;
 
+  const updateFragments = fragments => {
+    return fragments
+      .replace('on ImageSharpFixed', 'on ImageSharpFixed @client')
+      .replace('on ImageSharpFluid', 'on ImageSharpFluid @client')
+      .replace('on ImageSharpOriginal', 'on ImageSharpOriginal @client')
+  }
+
   return {
-    query: `${fragments} ${print(query)}`,
+    query: `${updateFragments(fragments)} ${print(query)}`,
     subscriptionQuery: `${fragments} ${print(subscriptionQuery)}`,
   }
 };

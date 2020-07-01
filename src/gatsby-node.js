@@ -110,11 +110,11 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
     // Copy the boilerplate file and replace the placeholder with actual modal name
     fs.readFile(
       './node_modules/gatsby-source-wagtail/preview.boilerplate.js',
-      (err, data) => {
+      (err, fileData) => {
         if (err)
           return console.error("Could not read preview boilerplate file", err)
         // Replace placeholder
-        let jsFile = data.toString().replace('CustomImage', data.imageType)
+        let jsFile = fileData.toString().replace('CustomImage', data.imageType)
         // Rewrite file so it's accessible
         fs.writeFile(
           `./node_modules/gatsby-source-wagtail/preview.js`,
