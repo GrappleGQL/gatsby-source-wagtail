@@ -114,7 +114,7 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
         if (err)
           return console.error("Could not read preview boilerplate file", err)
         // Replace placeholder
-        let jsFile = data.replace('CustomImage', data.imageType)
+        let jsFile = data.toString().replace('CustomImage', data.imageType)
         // Rewrite file so it's accessible
         fs.writeFile(
           `./node_modules/gatsby-source-wagtail/preview.js`,
@@ -151,8 +151,8 @@ exports.createResolvers = ({
     imageType
   }`, options.url, options.headers).then(({ data }) => {
     createResolvers({
-      CustomImage: {
-        [data.imageType]: {
+      [data.imageType]: {
+        imageFile: {
           type: `File`,
           async resolve(source, args, context, info) {
             try {

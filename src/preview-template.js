@@ -5,7 +5,7 @@ import { query as wagtailBaseFragments } from "../../.cache/fragments/gatsby-sou
 class PreviewPage extends React.Component {
   state = {
     Component: () => null,
-    fragments: wagtailBaseFragments.source
+    fragments: wagtailBaseFragments?.source
   };
 
   componentDidMount() {
