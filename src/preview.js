@@ -5,9 +5,10 @@ import traverse from 'traverse'
 
 import { ApolloClient } from 'apollo-client'
 import { gql } from "apollo-boost"
+import { split } from 'apollo-link'
 import { InMemoryCache } from 'apollo-cache-inmemory'
-import { HttpLink } from 'apollo-link-http'
-import { SubscriptionClient } from 'subscriptions-transport-ws'
+import { WebSocketLink } from 'apollo-link-ws'
+import { getMainDefinition } from 'apollo-utilities'
 import { createHttpLink } from 'apollo-link-http'
 import { introspectSchema, makeRemoteExecutableSchema, mergeSchemas } from 'graphql-tools'
 
@@ -35,10 +36,19 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
     return btoa(username + ':' + password)
   }
 
+  // Normal query link
+  let link = createHttpLink({
+    uri: url,
+    fetchOptions: {
+      headers: { "Authorization": token ? `Basic ${getToken()}` : '' }
+    },
+  })
+
   // If provided create a subscription endpoint
   let subscriptionClient
   if (websocketUrl) {
-    subscriptionClient = new SubscriptionClient(
+    // Link used for subscriptions
+    wsLink = new SubscriptionClient(
       websocketUrl,
       {
         reconnect: true,
@@ -47,15 +57,24 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
         }
       }
     );
+
+    // Alias original link and create one that merges the two
+    const httpLink = link
+    link = split(
+      // split based on operation type
+      ({ query }) => {
+        const definition = getMainDefinition(query);
+        return (
+          definition.kind === 'OperationDefinition' &&
+          definition.operation === 'subscription'
+        );
+      },
+      wsLink,
+      httpLink,
+    )
   }
 
-  // Experimental cache to support node image processing
-  const link = createHttpLink({
-    uri: url,
-    fetchOptions: {
-      headers: { "Authorization": token ? `Basic ${getToken()}` : '' }
-    },
-  })
+
 
   // Mock the fieldName for accessing local image files
   const typeDefs = gql`
@@ -138,8 +157,6 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
       imageParams[argument.name?.value] = argument.value?.value
     }
 
-    console.log(imageParams)
-
     // Allow resizing in the browser
     if (imageParams.height && imageParams.width) {
       imageHeight = imageParams.height
@@ -155,6 +172,15 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
       imageHeight = imageParams.width / aspectRatio
       imageWidth = imageParams.width
     }
+    // Calculate based on max dimensions for fluid
+    else if (imageParams.maxHeight) {
+      imageHeight = imageParams.maxHeight;
+      imageWidth = imageParams.maxHeight * aspectRatio;
+    }
+    else if (imageParams.maxWidth) {
+      imageHeight = imageParams.maxWidth / aspectRatio;
+      imageWidth = imageParams.maxWidth;
+    }
 
     return {
       imageHeight: Number(imageHeight),
@@ -166,15 +192,15 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
   const schemaExtensionResolvers = {
     ImageSharp: {
       fixed: (root, args, context, info) => {
-        const source = root.fixed.parent
+        const source = root.fixed.parent;
         const {
           imageWidth,
           imageHeight,
           aspectRatio
-        } = computeSharpSize(source, info)
-
+        } = computeSharpSize(source, info);
         return {
           __typename: "ImageSharpFixed",
+          id: source.id,
           base64: "",
           tracedSVG: "",
           aspectRatio,
@@ -185,19 +211,18 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
           srcWebp: "",
           srcSetWebp: "",
           originalName: ""
-        }
+        };
       },
-      fluid: () => (root, args, context, info) => {
-        const source = root.fluid.parent
-        console.log(source, info)
+      fluid: (root, args, context, info) => {
+        const source = root.fluid.parent;
         const {
           imageWidth,
           imageHeight,
           aspectRatio
-        } = computeSharpSize(source, info)
-
+        } = computeSharpSize(source, info);
         return {
           __typename: "ImageSharpFluid",
+          id: source.id,
           base64: "",
           tracedSVG: "",
           aspectRatio,
@@ -208,18 +233,20 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
           sizes: "",
           originalImg: source.src,
           originalName: "",
-          presentationWidth: source.width,
-          presentationHeight: source.height
-        }
-      },
+          presentationWidth: imageWidth,
+          presentationHeight: imageHeight
+        };
+      }
     },
     CustomImage: {
       imageFile: (source, args, context, info) => {
         // Create a fake date
-        let fileCreatedAt = new Date();
-        let fileCreatedAtISO = fileCreatedAt.toISOString();
-        let fileCreatedAtStamp = fileCreatedAt.getTime() / 1000; // Return a fake file instance
-
+        const fileCreatedAt = new Date();
+        const fileCreatedAtISO = fileCreatedAt.toISOString();
+        const fileCreatedAtStamp = fileCreatedAt.getTime() / 1000;
+        // Seperare URL to get path, filename & extension
+        const fileInfo = source.src.replace(/\\/g, "/").match(/(.*\/)?(\..*?|.*?)(\.[^.]*?)?(#.*$|\?.*$|$)/)
+        // Return a fake file instance
         return {
           "__typename": "File",
           "sourceInstanceName": "__PROGRAMMATIC__",
@@ -231,26 +258,21 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
           "accessTime": fileCreatedAtISO,
           "atime": fileCreatedAtISO,
           "atimeMs": fileCreatedAtStamp,
-          "base": "Artboard.png",
+          "base": fileInfo[2] + fileInfo[3],
           "birthTime": fileCreatedAtISO,
           "birthtimeMs": fileCreatedAtStamp,
           "ctime": fileCreatedAtISO,
           "ctimeMs": fileCreatedAtStamp,
-          "dir": source.src,
-          "ext": ".png",
-          "extension": "png",
-          // TODO:
+          "dir": fileInfo[1],
+          "ext": fileInfo[3],
+          "extension": fileInfo[3],
           "id": source.id,
           "publicURL": source.src,
-          // TODO:
           "relativeDirectory": source.src,
-          // TODO:
           "root": source.src,
-          // TODO:
           "uid": source.id,
           "url": source.src,
           "childImageSharp": {
-            // TODO:
             __typename: "ImageSharp",
             fluid: {
               __typename: "ImageSharpFluid",
@@ -288,20 +310,10 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
       token,
       fragments
     );
-
     // Get first version of preview to render the template
     client
       .query({ query: gql([query]) })
       .then(result => onNext(result.data || {}))
-
-    // If setup then run sunscription
-    // if (websocketUrl) {
-    //   const subscriptionRequest = createRequest(subscriptionQuery)
-    //   pipe(
-    //     client.executeSubscription(subscriptionRequest),
-    //     subscribe(({ data, error }) => onNext(data))
-    //   )
-    // }
   }
 };
 
@@ -393,6 +405,7 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
       ?.find(selection => selection?.name?.value == "imageFile" && (imageFileNode = selection))) {
 
       // Make sure we have src, height & width details
+      node.selectionSet.selections.push(createSelection('id'))
       node.selectionSet.selections.push(createSelection('src'))
       node.selectionSet.selections.push(createSelection('width'))
       node.selectionSet.selections.push(createSelection('height'))
