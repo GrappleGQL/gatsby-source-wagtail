@@ -46,18 +46,17 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
   })
 
   // If provided create a subscription endpoint
-  let subscriptionClient
   if (websocketUrl) {
     // Link used for subscriptions
-    wsLink = new SubscriptionClient(
-      websocketUrl,
-      {
+    const wsLink = new WebSocketLink({
+      uri: websocketUrl,
+      options: {
         reconnect: true,
         connectionParams: {
           authToken: getToken()
         }
       }
-    );
+    });
 
     // Alias original link and create one that merges the two
     const httpLink = link
@@ -315,6 +314,17 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
     client
       .query({ query: gql([query]) })
       .then(result => onNext(result.data || {}))
+    // Subscribe to any changes...
+    client
+      .subscribe({
+        query: gql([subscriptionQuery]),
+        variables: {}
+      })
+      .subscribe(
+        response => onNext(response),
+        error => console.log(error),
+        complete => console.log(complete)
+      );
   }
 };
 
