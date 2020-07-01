@@ -410,6 +410,20 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
         }
       })
 
+      // Add client to any fragment speads
+      traverse(imageFileNode).map(node => {
+        if (node.kind == "FragmentSpread") {
+          node.directives.push({
+            arguments: [],
+            kind: "Directive",
+            name: {
+              kind: "Name",
+              value: "client"
+            }
+          })
+        }
+      })
+
       // Break as we don't need to visit any other nodes
       break
     }
