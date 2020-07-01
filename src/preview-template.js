@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { decodePreviewUrl, withPreview } from "./preview";
+import { decodePreviewUrl, withPreview } from "./preview.boilerplate";
 import { query as wagtailBaseFragments } from "../../.cache/fragments/gatsby-source-wagtail-fragments.js";
 
 class PreviewPage extends React.Component {
@@ -23,7 +23,7 @@ class PreviewPage extends React.Component {
         const exportObj = mod[exportKey];
         if (typeof exportObj.source == "string") {
           this.setState({
-            fragments: (this.state.fragments += exportObj.source)
+            fragments: (this.state.fragments += exportObj?.source || "")
           });
         }
       });
