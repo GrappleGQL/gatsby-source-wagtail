@@ -150,8 +150,9 @@ exports.createResolvers = ({
   return queryBackend(`{
     imageType
   }`, options.url, options.headers).then(({ data }) => {
+    const modalName = data.imageType
     createResolvers({
-      [data.imageType]: {
+      [modalName]: {
         imageFile: {
           type: `File`,
           async resolve(source, args, context, info) {

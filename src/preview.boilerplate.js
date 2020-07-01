@@ -1,6 +1,7 @@
 import React from 'react'
 import qs from "querystring"
-import { cloneDeep, merge } from "lodash"
+import cloneDeep from 'lodash.clonedeep'
+import merge from 'lodash.merge'
 import traverse from 'traverse'
 
 import { ApolloClient } from 'apollo-client'
