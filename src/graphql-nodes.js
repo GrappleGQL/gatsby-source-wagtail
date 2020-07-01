@@ -114,27 +114,6 @@ exports.sourceNodes = async (
     return {}
   }
 
-  class WagtailRequestTransformer {
-    transformSchema = schema => schema
-    transformRequest = request => {
-      for (let node of traverse(request.document.definitions).nodes()) {
-        if (node?.kind == "Field" && node
-          ?.selectionSet
-          ?.selections
-          ?.find(selection => selection?.name?.value == "imageFile")) {
-          // Make sure we have src, height & width details
-          node.selectionSet.selections.push(createSelection('id'))
-          node.selectionSet.selections.push(createSelection('src'))
-          // Break as we don't need to visit any other nodes
-          break
-        }
-      }
-
-      return request
-    }
-    transformResult = result => result
-  }
-
   // Add some customization of the remote schema
   let transforms = []
   if (options.prefixTypename) {
@@ -210,4 +189,25 @@ function createSchemaNode({ id, typeName, fieldName, createContentDigest }) {
       ignoreType: true,
     },
   }
+}
+
+class WagtailRequestTransformer {
+  transformSchema = schema => schema
+  transformRequest = request => {
+    for (let node of traverse(request.document.definitions).nodes()) {
+      if (node?.kind == "Field" && node
+        ?.selectionSet
+        ?.selections
+        ?.find(selection => selection?.name?.value == "imageFile")) {
+        // Make sure we have src, height & width details
+        node.selectionSet.selections.push(createSelection('id'))
+        node.selectionSet.selections.push(createSelection('src'))
+        // Break as we don't need to visit any other nodes
+        break
+      }
+    }
+
+    return request
+  }
+  transformResult = result => result
 }
