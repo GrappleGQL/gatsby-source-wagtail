@@ -1,15 +1,16 @@
+
 # gatsby-source-wagtail
 
 > NOTE: This plugin requires that your Wagtail site uses the [Wagtail-Grapple](https://github.com/Torchbox/wagtail-grapple)
-library to build a compatible GraphQL endpoint. This plugin requires an existing GraphQL endpoint and does not work with
-wagtail out of the box.
+library to build a compatible GraphQL endpoint. This plugin requires an existing GraphQL endpoint and does not work with Wagtail out of the box.
 
 ## Features: 🚀
 * Stitches your Wagtail GraphQL endpoint into your internal Gastby one.
 * Simple router that matches your Django models to Gatsby templates.
 * Redirect support which makes your Wagtail redirects work with sites hosted on Netlify & S3.
 * Out-of-the-box support for Wagtail Preview with realtime updates as you type in the admin.
-* Fragments for cool images with [Gatsby Image](https://github.com/nathhorrigan/gatsby-image).
+* Gatsby Image Support 🔥
+* Support for incremental builds using `GATSBY_EXPERIMENTAL_PAGE_BUILD_ON_DATA_CHANGES=true ` flag.
 
 ## How to use
 
@@ -108,13 +109,62 @@ that have been defined and if they exist then they are passed to Gatsby `createR
 box with Netlify & S3 hosting.
 
 ### Image Fragments
-As mentioned, the library supports Gatsby Image assuming the [Wagtail Gatsby](https://github.com/nathhorrigan/wagtail-gatsby)
-has been installed. The available image fragments are:
+You can take advantage of [Gatsby Image's](https://www.gatsbyjs.org/packages/gatsby-image/) processing abilites by allow Gatsby to download your images and progressivly enhance them on the page.
 
-* WagtailImageFixed
-* WagtailImageFixed_tracedSVG
-* WagtailImageFixed_noBase64
-* WagtailImageFluid
-* WagtailImageFluid_tracedSVG
-* WagtailImageFluid_noBase64
+You can download your images like so:
 
+```
+import React from "react"
+import { graphql } from "gatsby"
+import Img from "gatsby-image"
+
+export default function BlogTemplate({ data }) {
+    const page = data.wagtail.page
+    return (
+        <article>
+            <h1>page?.title</h1>
+            <Img fixed={page?.cover?.imageFile?.childImageSharp.square} />
+        </article>
+    )
+}
+
+export const query = graphql`
+  query BlogIndexQuery($slug: String) {
+    wagtail {
+        page(slug: $slug) {
+            ...on BlogPage {
+                title
+                cover {
+                    imageFile {
+                        childImageSharp {
+                            square: fixed(width: 300, height: 300) {
+                                ...GatsbyImageSharpFixed
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+  }
+`
+```
+
+You will need `gatsby-transformer-sharp` and `gatsby-plugin-sharp` for local image processing to work.
+
+The following fragments work with `gatsby-source-wagtail`:
+* GatsbyImageSharpFixed
+* GatsbyImageSharpFixed_noBase64
+* GatsbyImageSharpFixed_tracedSVG
+* GatsbyImageSharpFixed_withWebp
+* GatsbyImageSharpFixed_withWebp_noBase64
+* GatsbyImageSharpFixed_withWebp_tracedSVG
+* GatsbyImageSharpFluid
+* GatsbyImageSharpFluid_noBase64
+* GatsbyImageSharpFluid_tracedSVG
+* GatsbyImageSharpFluid_withWebp
+* GatsbyImageSharpFluid_withWebp_noBase64
+* GatsbyImageSharpFluid_withWebp_tracedSVG
+* GatsbyImageSharpFluidLimitPresentationSize
+
+When previewing this page using Wagtail's Preview functionality then the image processing functionality is mocked and  will use the raw source files from Wagtail's media host. It should however respect the image dimension constraints.
