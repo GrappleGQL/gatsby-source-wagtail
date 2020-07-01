@@ -145,7 +145,7 @@ exports.createResolvers = ({
   createResolvers,
   store,
   reporter,
-}) => {
+}, options) => {
   const { createNode } = actions
   return queryBackend(`{
     imageType
