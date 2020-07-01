@@ -410,17 +410,22 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
         }
       })
 
-      // Add client to any fragment speads
+      // Replace inline any fragments
+      const fragmentTypes = require("gatsby-transformer-sharp/src/fragments.js")
       traverse(imageFileNode).map(node => {
-        if (node.kind == "FragmentSpread") {
-          node.directives.push({
-            arguments: [],
-            kind: "Directive",
-            name: {
-              kind: "Name",
-              value: "client"
-            }
-          })
+        if (node?.name?.value == "fixed" || node?.name?.value == "fluid" || node?.name?.value == "original") {
+          node.selectionSet.selections = node.selectionSet.selections
+            .map(selection => {
+              Object.keys(fragmentTypes).map(fragmentName => {
+                if (selection?.name?.value == fragmentName) {
+                  const mod = fragmentTypes[fragmentName]
+                  const selections = gql([mod.source])
+                  selection = selections.definitions[0].selectionSet.selections
+                }
+              })
+              return selection
+            })
+            .filter(selection => !!selection)
         }
       })
 
