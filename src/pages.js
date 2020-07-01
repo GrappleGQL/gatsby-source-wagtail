@@ -36,6 +36,7 @@ export const createWagtailPages = (
             path: page.url || "/",
             matchPath: page.url || "/",
             component: path.resolve("./src/" + template),
+            lastPublishedAt: page.lastPublishedAt,
             context: page,
           });
         }

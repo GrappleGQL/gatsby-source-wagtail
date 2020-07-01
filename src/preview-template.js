@@ -8,15 +8,33 @@ class PreviewPage extends React.Component {
     fragments: wagtailBaseFragments?.source
   };
 
+  // Also import these fragments
+  internalFragmentFiles = [
+    "gatsby-transformer-sharp/src/fragments.js"
+  ]
+
   componentDidMount() {
     if (typeof window != `undefined`) {
       this.fetchFragments();
-      this.fetchComponent();
+
+      // Fetch the fragment files specified by the user
+      const { fragmentFiles } = this.props.pageContext;
+      this.fetchComponent(fragmentFiles);
+
+      /*
+        Fetch the fragment files specified by me
+        Using try/catch because I can't assume they have these plugins installed.
+        The above I want to fail if they pass the wrong filename
+      */
+      try {
+        this.fetchComponent(this.internalFragmentFiles);
+      } catch(e) {
+        console.log("Could not load internal specified fragments:", this.internalFragmentFiles)
+      }
     }
   }
 
-  fetchFragments = () => {
-    const { fragmentFiles } = this.props.pageContext;
+  fetchFragments = (fragmentFiles) => {
     fragmentFiles.map(file => {
       const mod = require("../../src/" + file);
       Object.keys(mod).map(exportKey => {
