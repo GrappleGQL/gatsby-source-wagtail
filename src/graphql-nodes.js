@@ -199,6 +199,16 @@ class WagtailRequestTransformer {
         ?.selectionSet
         ?.selections
         ?.find(selection => selection?.name?.value == "imageFile")) {
+        // Add field to AST
+        const createSelection = name => ({
+          "kind": "Field",
+          "name": {
+            "kind": "Name",
+            "value": name,
+          },
+          "arguments": [],
+          "directives": []
+        })
         // Make sure we have src, height & width details
         node.selectionSet.selections.push(createSelection('id'))
         node.selectionSet.selections.push(createSelection('src'))

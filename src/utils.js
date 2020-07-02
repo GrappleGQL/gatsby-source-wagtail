@@ -16,13 +16,3 @@ exports.prepareOptions = (babel, options = {}, resolve = require.resolve) => {
   return items
 }
 
-// Use for creating extra fields on a query
-export const createSelection = name => ({
-  "kind": "Field",
-  "name": {
-    "kind": "Name",
-    "value": name,
-  },
-  "arguments": [],
-  "directives": []
-})

@@ -16,7 +16,6 @@ import { introspectSchema, makeRemoteExecutableSchema, mergeSchemas } from 'grap
 import { print } from "graphql/language/printer"
 import { getQuery, getIsolatedQuery } from './index'
 import introspectionQueryResultData from './fragmentTypes.json'
-import { createSelection } from './utils'
 
 const PreviewProvider = async (query, fragments = '', onNext) => {
   // Extract query from wagtail schema
@@ -394,6 +393,17 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
   const queryDef = query.definitions[0];
   queryDef.arguments = []
   queryDef.variableDefinitions = []
+
+  // Add field to AST
+  const createSelection = name => ({
+    "kind": "Field",
+    "name": {
+      "kind": "Name",
+      "value": name,
+    },
+    "arguments": [],
+    "directives": []
+  })
 
   // Alter the query so that we can execute it properly
   for (let node of traverse(query).nodes()) {
