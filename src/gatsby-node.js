@@ -140,7 +140,7 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
 
 exports.createResolvers = ({
   actions,
-  cache,
+  getCache,
   createNodeId,
   createResolvers,
   store,
@@ -150,25 +150,18 @@ exports.createResolvers = ({
   return queryBackend(`{
     imageType
   }`, options.url, options.headers).then(({ data }) => {
-    const modalName = data.imageType
     createResolvers({
-      [modalName]: {
+      [data.imageType]: {
         imageFile: {
           type: `File`,
-          async resolve(source, args, context, info) {
-            try {
-              const res = await createRemoteFileNode({
-                url: source.src,
-                store,
-                cache,
-                createNode,
-                createNodeId,
-                reporter
-              })
-              return res
-            } catch {
-              return null
-            }
+          resolve(source, args, context, info) {
+            return createRemoteFileNode({
+              url: source.src,
+              store,
+              getCache,
+              createNode,
+              createNodeId,
+            }).catch(err => console.error(err))
           },
         },
       },
