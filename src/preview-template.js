@@ -1,59 +1,61 @@
-import React, { Suspense } from "react";
-import { decodePreviewUrl, withPreview } from "./preview";
-import { query as wagtailBaseFragments } from "../../.cache/fragments/gatsby-source-wagtail-fragments.js";
+import React, { Suspense } from 'react'
+import { decodePreviewUrl, withPreview } from './preview'
+import { query as wagtailBaseFragments } from '../../.cache/fragments/gatsby-source-wagtail-fragments.js'
 
 class PreviewPage extends React.Component {
-  state = {
-    Component: () => null,
-    fragments: wagtailBaseFragments?.source || ""
-  };
-
-  componentDidMount() {
-    if (typeof window != `undefined`) {
-      // Fetch the fragment files specified by the user
-      const { fragmentFiles } = this.props.pageContext;
-      const fragmentModules = fragmentFiles
-        .map(file => require("../../src/" + file))
-      this.fetchFragments(fragmentModules)
-      // Get the correct template component
-      this.fetchComponent()
+    state = {
+        Component: () => null,
+        fragments: wagtailBaseFragments?.source || ''
     }
-  }
 
-  fetchFragments = fragmentModules => {
-    fragmentModules.map(mod => {
-      Object.keys(mod).map(exportKey => {
-        const exportObj = mod[exportKey];
-        if (typeof exportObj.source == "string") {
-          this.setState({
-            fragments: (this.state.fragments += exportObj?.source || "")
-          })
+    componentDidMount() {
+        if (typeof window != `undefined`) {
+            // Fetch the fragment files specified by the user
+            const { fragmentFiles } = this.props.pageContext
+            const fragmentModules = fragmentFiles.map(file =>
+                require('../../src/' + file)
+            )
+            this.fetchFragments(fragmentModules)
+            // Get the correct template component
+            this.fetchComponent()
         }
-      })
-    })
-  }
+    }
 
-  fetchComponent = () => {
-    const { pageMap } = this.props.pageContext
-    const { content_type } = decodePreviewUrl()
-    const pageMapKey = Object
-      .keys(pageMap)
-      .find(key => key.toLowerCase() == content_type.toLowerCase())
+    fetchFragments = fragmentModules => {
+        fragmentModules.map(mod => {
+            Object.keys(mod).map(exportKey => {
+                const exportObj = mod[exportKey]
+                if (typeof exportObj.source == 'string') {
+                    this.setState({
+                        fragments: (this.state.fragments +=
+                            exportObj?.source || '')
+                    })
+                }
+            })
+        })
+    }
 
-    const componentFile = require("../../src/" + pageMap[pageMapKey])
-    this.setState({
-      Component: withPreview(
-        componentFile.default,
-        componentFile.query,
-        this.state.fragments
-      )
-    })
-  }
+    fetchComponent = () => {
+        const { pageMap } = this.props.pageContext
+        const { content_type } = decodePreviewUrl()
+        const pageMapKey = Object.keys(pageMap).find(
+            key => key.toLowerCase() == content_type.toLowerCase()
+        )
 
-  render() {
-    const { Component } = this.state
-    return <Component />
-  }
+        const componentFile = require('../../src/' + pageMap[pageMapKey])
+        this.setState({
+            Component: withPreview(
+                componentFile.default,
+                componentFile.query,
+                this.state.fragments
+            )
+        })
+    }
+
+    render() {
+        const { Component } = this.state
+        return <Component />
+    }
 }
 
-export default PreviewPage;
+export default PreviewPage
