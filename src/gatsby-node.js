@@ -1,5 +1,6 @@
 const fs = require('fs-extra');
 const request = require('graphql-request')
+const { createRemoteFileNode } = require('gatsby-source-filesystem')
 const { sourceNodes } = require('./graphql-nodes');
 const { getRootQuery } = require('./getRootQuery');
 const { generateImageFragments } = require('./fragments')
@@ -53,8 +54,7 @@ exports.onCreateWebpackConfig = ({ stage, actions, getConfig }) => {
 
 exports.onPreExtractQueries = async ({ store, actions }, options) => {
   const { createRedirect } = actions
-
-  queryBackend(`{
+  return queryBackend(`{
     imageType
     redirects {
       oldPath
@@ -65,12 +65,21 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
       types {
         kind
         name
+        fields {
+          name
+        }
         possibleTypes {
           name
         }
       }
     }
   }`, options.url, options.headers).then(({ data }) => {
+    // Check if fields added by wagtail-gatsby are visible
+    const wagtailGatsbyInstalled = !!data.__schema
+        .types
+        .find(objectType => objectType.name == data.imageType)
+        .fields
+        .find(field => field.name == "tracedSVG")
 
     // Build schema file for Apollo, here we're filtering out any type information unrelated to unions or interfaces
     const filteredData = data.__schema.types.filter(type => type.possibleTypes !== null)
@@ -86,13 +95,35 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
 
     // Generate Image Fragments for the servers respective image model.
     const program = store.getState().program
-    const fragments = generateImageFragments(data.imageType)
+    const fragments = wagtailGatsbyInstalled
+      ? generateImageFragments(data.imageType)
+      : ""
     fs.writeFile(
       `${program.directory}/.cache/fragments/gatsby-source-wagtail-fragments.js`,
       fragments,
       err => {
         if(err)
           console.error(err)
+      }
+    )
+
+    // Copy the boilerplate file and replace the placeholder with actual modal name
+    fs.readFile(
+      './node_modules/gatsby-source-wagtail/preview.boilerplate.js',
+      (err, fileData) => {
+        if (err)
+          return console.error("Could not read preview boilerplate file", err)
+        // Replace placeholder
+        let jsFile = fileData.toString().replace('CustomImage', data.imageType)
+        // Rewrite file so it's accessible
+        fs.writeFile(
+          `./node_modules/gatsby-source-wagtail/preview.js`,
+          jsFile,
+          err => {
+            if(err)
+              console.error("Could not write preview file", err)
+          }
+        )
       }
     )
 
@@ -104,5 +135,36 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
         isPermanent: redirect.isPermanent,
         force: true
       }))
+  })
+}
+
+exports.createResolvers = ({
+  actions,
+  getCache,
+  createNodeId,
+  createResolvers,
+  store,
+  reporter,
+}, options) => {
+  const { createNode } = actions
+  return queryBackend(`{
+    imageType
+  }`, options.url, options.headers).then(({ data }) => {
+    createResolvers({
+      [data.imageType]: {
+        imageFile: {
+          type: `File`,
+          resolve(source, args, context, info) {
+            return createRemoteFileNode({
+              url: source.src,
+              store,
+              getCache,
+              createNode,
+              createNodeId,
+            }).catch(err => console.error(err))
+          },
+        },
+      },
+    })
   })
 }

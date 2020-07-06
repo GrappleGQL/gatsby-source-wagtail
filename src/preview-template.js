@@ -5,39 +5,42 @@ import { query as wagtailBaseFragments } from "../../.cache/fragments/gatsby-sou
 class PreviewPage extends React.Component {
   state = {
     Component: () => null,
-    fragments: wagtailBaseFragments.source
+    fragments: wagtailBaseFragments?.source || ""
   };
 
   componentDidMount() {
     if (typeof window != `undefined`) {
-      this.fetchFragments();
-      this.fetchComponent();
+      // Fetch the fragment files specified by the user
+      const { fragmentFiles } = this.props.pageContext;
+      const fragmentModules = fragmentFiles
+        .map(file => require("../../src/" + file))
+      this.fetchFragments(fragmentModules)
+      // Get the correct template component
+      this.fetchComponent()
     }
   }
 
-  fetchFragments = () => {
-    const { fragmentFiles } = this.props.pageContext;
-    fragmentFiles.map(file => {
-      const mod = require("../../src/" + file);
+  fetchFragments = fragmentModules => {
+    fragmentModules.map(mod => {
       Object.keys(mod).map(exportKey => {
         const exportObj = mod[exportKey];
         if (typeof exportObj.source == "string") {
           this.setState({
-            fragments: (this.state.fragments += exportObj.source)
-          });
+            fragments: (this.state.fragments += exportObj?.source || "")
+          })
         }
-      });
+      })
     })
   }
 
   fetchComponent = () => {
-    const { pageMap } = this.props.pageContext;
-    const { content_type } = decodePreviewUrl();
+    const { pageMap } = this.props.pageContext
+    const { content_type } = decodePreviewUrl()
     const pageMapKey = Object
       .keys(pageMap)
       .find(key => key.toLowerCase() == content_type.toLowerCase())
 
-    const componentFile = require("../../src/" + pageMap[pageMapKey]);
+    const componentFile = require("../../src/" + pageMap[pageMapKey])
     this.setState({
       Component: withPreview(
         componentFile.default,

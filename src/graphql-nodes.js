@@ -1,19 +1,34 @@
 const uuidv4 = require(`uuid/v4`)
-const { buildSchema, printSchema } = require(`graphql`)
+const {
+  buildSchema,
+  printSchema,
+  graphqlSync,
+  introspectionQuery,
+  IntrospectionQuery
+} = require(`graphql`)
+const { fromIntrospectionQuery } = require('graphql-2-json-schema')
+
 const {
   makeRemoteExecutableSchema,
+  delegateToSchema,
   transformSchema,
   introspectSchema,
   RenameTypes,
+  mergeSchemas
 } = require(`graphql-tools`)
 const { createHttpLink } = require(`apollo-link-http`)
 const fetch = require(`node-fetch`)
 const invariant = require(`invariant`)
+const traverse = require(`traverse`)
 
 const {
   NamespaceUnderFieldTransform,
   StripNonQueryTransform,
 } = require(`gatsby-source-graphql/transforms`)
+
+const {
+  createSelection
+} = require(`./utils`)
 
 exports.sourceNodes = async (
   { actions, createNodeId, cache, createContentDigest },
@@ -33,15 +48,15 @@ exports.sourceNodes = async (
 
   invariant(
     typeName && typeName.length > 0,
-    `gatsby-source-graphql requires option \`typeName\` to be specified`
+    `gatsby-source-wagtail requires option \`typeName\` to be specified`
   )
   invariant(
     fieldName && fieldName.length > 0,
-    `gatsby-source-graphql requires option \`fieldName\` to be specified`
+    `gatsby-source-wagtail requires option \`fieldName\` to be specified`
   )
   invariant(
     (url && url.length > 0) || createLink,
-    `gatsby-source-graphql requires either option \`url\` or \`createLink\` callback`
+    `gatsby-source-wagtail requires either option \`url\` or \`createLink\` callback`
   )
 
   let link
@@ -61,9 +76,10 @@ exports.sourceNodes = async (
   if (createSchema) {
     introspectionSchema = await createSchema(options)
   } else {
-    const cacheKey = `gatsby-source-graphql-schema-${typeName}-${fieldName}`
+    const cacheKey = `gatsby-source-wagtail-${typeName}-${fieldName}`
     let sdl = await cache.get(cacheKey)
 
+    // Cache the remote schema for performance benefit
     if (!sdl) {
       introspectionSchema = await introspectSchema(link)
       sdl = printSchema(introspectionSchema)
@@ -74,12 +90,14 @@ exports.sourceNodes = async (
     await cache.set(cacheKey, sdl)
   }
 
+  // Create a remote link to the Wagtail GraphQL schema
   const remoteSchema = makeRemoteExecutableSchema({
     schema: introspectionSchema,
     link,
   })
 
-  const nodeId = createNodeId(`gatsby-source-graphql-${typeName}`)
+  // Create a point in the schema that can be used to access Wagtail
+  const nodeId = createNodeId(`gatsby-source-wagtail-${typeName}`)
   const node = createSchemaNode({
     id: nodeId,
     typeName,
@@ -96,6 +114,7 @@ exports.sourceNodes = async (
     return {}
   }
 
+  // Add some customization of the remote schema
   let transforms = []
   if (options.prefixTypename) {
       transforms = [
@@ -106,6 +125,7 @@ exports.sourceNodes = async (
           fieldName,
           resolver,
         }),
+        new WagtailRequestTransformer()
       ]
   } else {
     transforms = [
@@ -115,12 +135,26 @@ exports.sourceNodes = async (
           fieldName,
           resolver,
         }),
+        new WagtailRequestTransformer(),
       ]
   }
 
-  const schema = transformSchema(remoteSchema, transforms)
-  addThirdPartySchema({ schema })
+  const mergeLocalAndRemoteSchema = async () => {
+    // merge the schema along with custom resolvers
+    const schema = mergeSchemas({
+      schemas: [remoteSchema]
+    })
 
+    // Apply any transforms
+    return transformSchema(schema, transforms)
+  }
+
+  // Add new merged schema to Gatsby
+  addThirdPartySchema({
+    schema: await mergeLocalAndRemoteSchema()
+  });
+
+  // Allow refreshing of the remote data in DEV mode only
   if (process.env.NODE_ENV !== `production`) {
     if (refetchInterval) {
       const msRefetchInterval = refetchInterval * 1000
@@ -155,4 +189,35 @@ function createSchemaNode({ id, typeName, fieldName, createContentDigest }) {
       ignoreType: true,
     },
   }
+}
+
+class WagtailRequestTransformer {
+  transformSchema = schema => schema
+  transformRequest = request => {
+    for (let node of traverse(request.document.definitions).nodes()) {
+      if (node?.kind == "Field" && node
+        ?.selectionSet
+        ?.selections
+        ?.find(selection => selection?.name?.value == "imageFile")) {
+        // Add field to AST
+        const createSelection = name => ({
+          "kind": "Field",
+          "name": {
+            "kind": "Name",
+            "value": name,
+          },
+          "arguments": [],
+          "directives": []
+        })
+        // Make sure we have src, height & width details
+        node.selectionSet.selections.push(createSelection('id'))
+        node.selectionSet.selections.push(createSelection('src'))
+        // Break as we don't need to visit any other nodes
+        break
+      }
+    }
+
+    return request
+  }
+  transformResult = result => result
 }
