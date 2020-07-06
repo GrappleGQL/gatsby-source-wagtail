@@ -1,7 +1,7 @@
 {
   "name": "gatsby-source-wagtail",
   "description": "Gatsby plugin which adds Wagtail Grapple support to Gatsby",
-  "version": "0.4.4",
+  "version": "0.5.1",
   "author": "NathHorrigan <NathHorrigan@gmail.com>",
   "bugs": {
     "url": "https://github.com/NathHorrigan/gatsby-source-wagtail/issues"
@@ -14,7 +14,6 @@
   ],
   "dependencies": {
     "@babel/runtime": "^7.7.6",
-    "@urql/exchange-graphcache": "^3.0.1",
     "apollo-boost": "^0.4.9",
     "apollo-cache-inmemory": "^1.6.6",
     "apollo-client": "^2.6.10",
@@ -35,10 +34,7 @@
     "query-string": "^6.9.0",
     "react": "^16.12.0",
     "subscriptions-transport-ws": "^0.9.16",
-    "traverse": "^0.6.6",
-    "urql": "^1.7.0",
-    "urql-exchange-schema": "^0.1.0",
-    "wonka": "^3.2.1"
+    "traverse": "^0.6.6"
   },
   "devDependencies": {
     "@babel/cli": "^7.7.5",
