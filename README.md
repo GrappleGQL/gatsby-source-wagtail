@@ -1,30 +1,26 @@
 
 # gatsby-source-wagtail
 
-> NOTE: This plugin requires that your Wagtail site uses the [Wagtail-Grapple](https://github.com/Torchbox/wagtail-grapple)
-library to build a compatible GraphQL endpoint. This plugin requires an existing GraphQL endpoint and does not work with Wagtail out of the box.
+> NOTE: This plugin requires that your Wagtail site use the [Wagtail-Grapple](https://github.com/torchbox/wagtail-grapple)
+library to build a compatible GraphQL endpoint. It does not work without a GraphQL endpoint.
 
 ## Features: 🚀
-* Stitches your Wagtail GraphQL endpoint into your internal Gatsby one.
+* Stitches your Wagtail GraphQL endpoint into the internal Gatsby one.
 * Simple router that matches your Django models to Gatsby templates.
-* Redirect support which makes your Wagtail redirects work with sites hosted on Netlify & S3.
-* Out-of-the-box support for Wagtail Preview with realtime updates as you type in the admin.
+* Redirect support, making your Wagtail redirects work with sites hosted on Netlify & S3.
+* Out-of-the-box Wagtail Preview with realtime update as you type in the admin.
 * Gatsby Image Support 🔥
-* Support for incremental builds using `GATSBY_EXPERIMENTAL_PAGE_BUILD_ON_DATA_CHANGES=true ` flag.
+* Incremental builds using `GATSBY_EXPERIMENTAL_PAGE_BUILD_ON_DATA_CHANGES=true ` flag.
 
 ## How to use
 
 ### Installation
 
-Just install the package via NPM:
 `npm install gatsby-source-wagtail`
-
-> If you want to use the Gatsby Image fragments then you will need to install the server-side Wagtail library for this also:
-[Wagtail Gatsby](https://github.com/nathhorrigan/wagtail-gatsby).
 
 ### Configuration
 
-Simply add the package to your `gatsby-config.js` with the url to your Wagtail GQL endpoint:
+Add the package to your `gatsby-config.js` with the url to your Wagtail GQL endpoint:
 
 ```js
 ...
@@ -41,20 +37,19 @@ Simply add the package to your `gatsby-config.js` with the url to your Wagtail G
 
 | Option       | Required | Description                                                                                                                                                                                                                                                                                                    | Datatype | Default  |
 |--------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|----------|
-| url          | Y        | The url of the Wagtail GraphQL endpoint                                                                                                                                                                                                                                                                        | string   | null     |
-| websocketUrl | N*       | The url of your GraphQL subscriptions endpoint, during development this can be inferred but will likely need to be set in a production env                                                                                                                                                                          | string   | N/A      |
+| url          | Y        | The Wagtail GraphQL endpoint URL                                                                                                                                                                                                                                                                        | string   | null     |
+| websocketUrl | N*       | The GraphQL subscriptions endpoint URL. It can be inferred during development, but needs to be set in a production env                                                                                                                                                                          | string   | N/A      |
 | headers      | N        | A JSON object of headers you want appended to all HTTP requests (Gatsby Build + Page Preview).                                                                                                                                                                                                                 | json     | {}       |
 | fieldName    | N*       | The field name you want your remote endpoint accessible under. If you have multiple connections then you will need to provide a value for at least one of them.                                                                                                                                                | string   |  wagtail |
-| typeName     | N*       | The internal type name of the remote schema. You can ignore this unless you have multiple connections, if so, you will need to provide a value (just copy fieldName).                                                                                                                                          | string   | wagtail  |
-| isDefault    | N*       | A settings that tells the plugin which Wagtail is the default is the primary/default one and should be used for preview and page generation. If you have multiple connections then you need to choose which one you will generate pages from, multiple site page generation is planned for future development. | string   | true     |
+| typeName     | N*       | The remote schema's internal type name. When you have multiple connections, you will need to provide a value (just copy fieldName).                                                                                                                                          | string   | wagtail  |
+| isDefault    | N*       | A settings that tells the plugin which Wagtail GraphQL endpoint is the primary/default one. Used for preview and page generation. If you have multiple connections, you must choose which one you will generate pages from. Multiple site page generation is planned for future development. | string   | true     |
 
 
 ### Page Router
-This source plugin provides an easy to use router that maps a Django model to a specific Gatsby template. Simply pass a JSON map like
-so to the function in your `gatsby-node.js`. This router also adds Wagtail Preview to your Gatsby site automagically! Now just point your backend
-to your Gatsby site and everything will work: [How to link Wagtail & Gatsby](LINK TO BACKEND DOCS).
+This source plugin provides a simple router that maps a Django model to a specific Gatsby template. Pass a JSON map to the function in your `gatsby-node.js`. 
+The router also adds Wagtail Preview to your Gatsby site automagically! Now point your backend to the Gatsby site and everything will work: [How to link Wagtail & Gatsby](LINK TO BACKEND DOCS).
 
-This maps a Django model with ContentType of `home.BlogPage` to a template located at `./src/templates/blog.js`
+To map a Django model with the `home.BlogPage` ContentType to a template located at `./src/templates/blog.js`
 
 ```js
 const { createWagtailPages } = require("gatsby-source-wagtail/pages.js")
@@ -66,7 +61,7 @@ exports.createPages = ({ graphql, actions }) => {
 }
 ```
 
-Here is an example template:
+The example template:
 
 
 ```jsx
@@ -95,8 +90,7 @@ export const query = graphql`
 `
 ```
 
-As you can see some information about the specific page is passed to page through gatsby's context prop. The following passed
-variables and hence are available in the templates GraphQL query are:
+Some page specific information is passed to page through the Gatsby context prop. The following variables are passed, thus are available in templates:
 
 * $id: Int
 * $slug: String
@@ -104,16 +98,12 @@ variables and hence are available in the templates GraphQL query are:
 * $contentType: String
 
 ### Redirects
-There isn't much you need to know about redirects, basically the plugin queries your Wagtail endpoint for any redirects
-that have been defined and if they exist then they are passed to Gatsby `createRedirect` function which works out of the
-box with Netlify & S3 hosting.
+The plugin queries your Wagtail endpoint for any defined redirects and pass them to the Gatsby `createRedirect` function.
 
 ### Image Fragments
-You can take advantage of [Gatsby Image's](https://www.gatsbyjs.org/packages/gatsby-image/) processing abilites by allow Gatsby to download your images and progressivly enhance them on the page.
+You can take advantage of the [Gatsby Image](https://www.gatsbyjs.org/packages/gatsby-image/) processing abilites by allowing Gatsby to download your images and progressively enhance them on the page.
 
-You can download your images like so:
-
-```
+```jsx
 import React from "react"
 import { graphql } from "gatsby"
 import Img from "gatsby-image"
@@ -150,7 +140,7 @@ export const query = graphql`
 `
 ```
 
-You will need `gatsby-transformer-sharp` and `gatsby-plugin-sharp` for local image processing to work.
+`gatsby-transformer-sharp` and `gatsby-plugin-sharp` are required for local image processing.
 
 The following fragments work with `gatsby-source-wagtail`:
 * GatsbyImageSharpFixed
@@ -167,4 +157,4 @@ The following fragments work with `gatsby-source-wagtail`:
 * GatsbyImageSharpFluid_withWebp_tracedSVG
 * GatsbyImageSharpFluidLimitPresentationSize
 
-When previewing this page using Wagtail's Preview functionality then the image processing functionality is mocked and  will use the raw source files from Wagtail's media host. It should however respect the image dimension constraints.
+When previewing the page using Wagtail Preview, the image processing is mocked and the plugin will use the raw source files from your Wagtail's media host. It should, however, respect the image dimension constraints.
