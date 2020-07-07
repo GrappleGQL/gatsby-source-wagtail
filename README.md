@@ -18,8 +18,6 @@ library to build a compatible GraphQL endpoint. It does not work without a Graph
 
 `npm install gatsby-source-wagtail`
 
-> If you want to use the Gatsby Image fragments then you will need to install the [Wagtail Gatsby](https://github.com/nathhorrigan/wagtail-gatsby) server-side library.
-
 ### Configuration
 
 Add the package to your `gatsby-config.js` with the url to your Wagtail GQL endpoint:
