@@ -68,7 +68,7 @@ The example template:
 ...
 
 export default ({ data }) => {
-  const { page } = data.wagtail
+  const { page } = data.wagtail.page
 
   return (
     <div>
