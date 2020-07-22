@@ -7,7 +7,7 @@ import traverse from 'traverse'
 import { ApolloClient } from 'apollo-client'
 import { gql } from 'apollo-boost'
 import { split } from 'apollo-link'
-import { InMemoryCache } from 'apollo-cache-inmemory'
+import { InMemoryCache, IntrospectionFragmentMatcher } from 'apollo-cache-inmemory'
 import { WebSocketLink } from 'apollo-link-ws'
 import { getMainDefinition } from 'apollo-utilities'
 import { createHttpLink } from 'apollo-link-http'
@@ -296,8 +296,12 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
     }
 
     // Create Apollo client
+    const fragmentMatcher = new IntrospectionFragmentMatcher({
+        introspectionQueryResultData
+    })
+    const cache = new InMemoryCache({ fragmentMatcher })
     const client = new ApolloClient({
-        cache: new InMemoryCache(),
+        cache,
         link,
         typeDefs,
         resolvers: schemaExtensionResolvers
