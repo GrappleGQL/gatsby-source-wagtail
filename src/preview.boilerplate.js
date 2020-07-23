@@ -7,14 +7,17 @@ import traverse from 'traverse'
 import { ApolloClient } from 'apollo-client'
 import { gql } from 'apollo-boost'
 import { split } from 'apollo-link'
-import { InMemoryCache } from 'apollo-cache-inmemory'
+import {
+    InMemoryCache,
+    IntrospectionFragmentMatcher,
+} from 'apollo-cache-inmemory'
 import { WebSocketLink } from 'apollo-link-ws'
 import { getMainDefinition } from 'apollo-utilities'
 import { createHttpLink } from 'apollo-link-http'
 import {
     introspectSchema,
     makeRemoteExecutableSchema,
-    mergeSchemas
+    mergeSchemas,
 } from 'graphql-tools'
 
 import { print } from 'graphql/language/printer'
@@ -28,7 +31,7 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
         fieldName,
         url,
         websocketUrl,
-        headers
+        headers,
     } = window.___wagtail.default
     const isolatedQuery = getIsolatedQuery(query, fieldName, typeName)
     const { content_type, token } = decodePreviewUrl()
@@ -44,8 +47,8 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
     let link = createHttpLink({
         uri: url,
         fetchOptions: {
-            headers: { Authorization: token ? `Basic ${getToken()}` : '' }
-        }
+            headers: { Authorization: token ? `Basic ${getToken()}` : '' },
+        },
     })
 
     // If provided create a subscription endpoint
@@ -56,9 +59,9 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
             options: {
                 reconnect: true,
                 connectionParams: {
-                    authToken: getToken()
-                }
-            }
+                    authToken: getToken(),
+                },
+            },
         })
 
         // Alias original link and create one that merges the two
@@ -184,7 +187,7 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
         return {
             imageHeight: Number(imageHeight),
             imageWidth: Number(imageWidth),
-            aspectRatio
+            aspectRatio,
         }
     }
 
@@ -195,7 +198,7 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
                 const {
                     imageWidth,
                     imageHeight,
-                    aspectRatio
+                    aspectRatio,
                 } = computeSharpSize(source, info)
                 return {
                     __typename: 'ImageSharpFixed',
@@ -209,7 +212,7 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
                     srcSet: '',
                     srcWebp: '',
                     srcSetWebp: '',
-                    originalName: ''
+                    originalName: '',
                 }
             },
             fluid: (root, args, context, info) => {
@@ -217,7 +220,7 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
                 const {
                     imageWidth,
                     imageHeight,
-                    aspectRatio
+                    aspectRatio,
                 } = computeSharpSize(source, info)
                 return {
                     __typename: 'ImageSharpFluid',
@@ -233,9 +236,9 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
                     originalImg: source.src,
                     originalName: '',
                     presentationWidth: imageWidth,
-                    presentationHeight: imageHeight
+                    presentationHeight: imageHeight,
                 }
-            }
+            },
         },
         CustomImage: {
             imageFile: (source, args, context, info) => {
@@ -277,30 +280,34 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
                         __typename: 'ImageSharp',
                         fluid: {
                             __typename: 'ImageSharpFluid',
-                            parent: source
+                            parent: source,
                         },
                         fixed: {
                             __typename: 'ImageSharpFixed',
-                            parent: source
+                            parent: source,
                         },
                         original: {
                             __typename: 'ImageSharpOriginal',
                             height: source.height,
                             width: source.width,
-                            src: source.src
-                        }
-                    }
+                            src: source.src,
+                        },
+                    },
                 }
-            }
-        }
+            },
+        },
     }
 
     // Create Apollo client
+    const fragmentMatcher = new IntrospectionFragmentMatcher({
+        introspectionQueryResultData,
+    })
+    const cache = new InMemoryCache({ fragmentMatcher })
     const client = new ApolloClient({
-        cache: new InMemoryCache(),
+        cache,
         link,
         typeDefs,
-        resolvers: schemaExtensionResolvers
+        resolvers: schemaExtensionResolvers,
     })
 
     if (content_type && token) {
@@ -314,17 +321,17 @@ const PreviewProvider = async (query, fragments = '', onNext) => {
         // Get first version of preview to render the template
         client
             .query({ query: gql([query]) })
-            .then(result => onNext(result.data || {}))
+            .then((result) => onNext(result.data || {}))
         // Subscribe to any changes...
         client
             .subscribe({
                 query: gql([subscriptionQuery]),
-                variables: {}
+                variables: {},
             })
             .subscribe(
-                response => onNext(response),
-                error => console.log(error),
-                complete => console.log(complete)
+                (response) => onNext(response),
+                (error) => console.log(error),
+                (complete) => console.log(complete)
             )
     }
 }
@@ -335,11 +342,11 @@ export const withPreview = (WrappedComponent, pageQuery, fragments = '') => {
         constructor(props) {
             super(props)
             this.state = {
-                wagtail: cloneDeep(props.data ? props.data.wagtail : {})
+                wagtail: cloneDeep(props.data ? props.data.wagtail : {}),
             }
-            PreviewProvider(pageQuery, fragments, data => {
+            PreviewProvider(pageQuery, fragments, (data) => {
                 this.setState({
-                    wagtail: merge({}, this.state.wagtail, data)
+                    wagtail: merge({}, this.state.wagtail, data),
                 })
             })
         }
@@ -363,26 +370,26 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
             kind: 'Argument',
             name: {
                 kind: 'Name',
-                value: 'contentType'
+                value: 'contentType',
             },
             value: {
                 block: false,
                 kind: 'StringValue',
-                value: contentType
-            }
+                value: contentType,
+            },
         },
         {
             kind: 'Argument',
             name: {
                 kind: 'Name',
-                value: 'token'
+                value: 'token',
             },
             value: {
                 block: false,
                 kind: 'StringValue',
-                value: token
-            }
-        }
+                value: token,
+            },
+        },
     ]
 
     // Rename query for debugging reasons
@@ -391,14 +398,14 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
     queryDef.variableDefinitions = []
 
     // Add field to AST
-    const createSelection = name => ({
+    const createSelection = (name) => ({
         kind: 'Field',
         name: {
             kind: 'Name',
-            value: name
+            value: name,
         },
         arguments: [],
-        directives: []
+        directives: [],
     })
 
     // Alter the query so that we can execute it properly
@@ -408,7 +415,7 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
         if (
             node?.kind == 'Field' &&
             node?.selectionSet?.selections?.find(
-                selection =>
+                (selection) =>
                     selection?.name?.value == 'imageFile' &&
                     (imageFileNode = selection)
             )
@@ -425,21 +432,21 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
                 kind: 'Directive',
                 name: {
                     kind: 'Name',
-                    value: 'client'
-                }
+                    value: 'client',
+                },
             })
 
             // Replace inline any fragments
             const fragmentTypes = require('gatsby-transformer-sharp/src/fragments.js')
-            traverse(imageFileNode).map(node => {
+            traverse(imageFileNode).map((node) => {
                 if (
                     node?.name?.value == 'fixed' ||
                     node?.name?.value == 'fluid' ||
                     node?.name?.value == 'original'
                 ) {
                     node.selectionSet.selections = node.selectionSet.selections
-                        .map(selection => {
-                            Object.keys(fragmentTypes).map(fragmentName => {
+                        .map((selection) => {
+                            Object.keys(fragmentTypes).map((fragmentName) => {
                                 if (selection?.name?.value == fragmentName) {
                                     const mod = fragmentTypes[fragmentName]
                                     const selections = gql([mod.source])
@@ -450,7 +457,7 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
                             })
                             return selection
                         })
-                        .filter(selection => !!selection)
+                        .filter((selection) => !!selection)
                 }
             })
 
@@ -464,7 +471,7 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
     } else {
         queryDef.name = {
             kind: 'Name',
-            value: 'PreviewQuery'
+            value: 'PreviewQuery',
         }
     }
 
@@ -474,18 +481,18 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
     non-page selections so we override the whole array with just the pages.
   */
     const pageSelections = queryDef.selectionSet.selections.filter(
-        selection => {
+        (selection) => {
             return selection.name.value.toLowerCase() === 'page'
         }
     )
-    pageSelections.map(selection => (selection.arguments = previewArgs))
+    pageSelections.map((selection) => (selection.arguments = previewArgs))
 
     // Change query to subcription type
     const subscriptionQuery = cloneDeep(queryDef)
     subscriptionQuery.operation = 'subscription'
     subscriptionQuery.selectionSet.selections = pageSelections
 
-    const updateFragments = fragments => {
+    const updateFragments = (fragments) => {
         return fragments
             .replace('on ImageSharpFixed', 'on ImageSharpFixed @client')
             .replace('on ImageSharpFluid', 'on ImageSharpFluid @client')
@@ -494,7 +501,7 @@ const generatePreviewQuery = (query, contentType, token, fragments) => {
 
     return {
         query: `${updateFragments(fragments)} ${print(query)}`,
-        subscriptionQuery: `${fragments} ${print(subscriptionQuery)}`
+        subscriptionQuery: `${fragments} ${print(subscriptionQuery)}`,
     }
 }
 
