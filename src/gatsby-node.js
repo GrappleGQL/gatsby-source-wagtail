@@ -4,6 +4,7 @@ const { createRemoteFileNode } = require('gatsby-source-filesystem')
 const { sourceNodes } = require('./graphql-nodes')
 const { getRootQuery } = require('./getRootQuery')
 const { generateImageFragments } = require('./fragments')
+const fetch = require(`node-fetch`)
 
 const queryBackend = (query, url, headers) =>
     fetch(url, {

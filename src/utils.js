@@ -10,7 +10,7 @@ exports.prepareOptions = (babel, options = {}, resolve = require.resolve) => {
             babel.createConfigItem(
                 [
                     require.resolve(
-                        'gatsby-source-wagtail/babel-plugin-remove-graphql-queries'
+                        'babel-plugin-remove-graphql-queries'
                     )
                 ],
                 {
