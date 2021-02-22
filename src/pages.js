@@ -1,4 +1,5 @@
 const path = require('path')
+const { previewTemplate } = require('./paths')
 
 export const createWagtailPages = (
     pageMap,
@@ -45,9 +46,7 @@ export const createWagtailPages = (
             // Create preview page and pass page-map.
             createPage({
                 path: '/preview',
-                component: path.resolve(
-                    './node_modules/gatsby-source-wagtail/preview-template.js'
-                ),
+                component: previewTemplate,
                 context: { pageMap, fragmentFiles }
             })
         } else {

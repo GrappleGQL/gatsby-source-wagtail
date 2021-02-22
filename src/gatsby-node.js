@@ -5,6 +5,7 @@ const { sourceNodes } = require('./graphql-nodes')
 const { getRootQuery } = require('./getRootQuery')
 const { generateImageFragments } = require('./fragments')
 const fetch = require(`node-fetch`)
+const { selfFolder } = require('./paths')
 
 const queryBackend = (query, url, headers) =>
     fetch(url, {
@@ -95,7 +96,7 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
         )
         data.__schema.types = filteredData
         fs.writeFile(
-            './node_modules/gatsby-source-wagtail/fragmentTypes.json',
+            path.join(selfFolder, 'fragmentTypes.json'),
             JSON.stringify(data),
             err => {
                 if (err) {
@@ -122,7 +123,7 @@ exports.onPreExtractQueries = async ({ store, actions }, options) => {
 
         // Copy the boilerplate file and replace the placeholder with actual modal name
         fs.readFile(
-            './node_modules/gatsby-source-wagtail/preview.boilerplate.js',
+            path.join(selfFolder, 'preview.boilerplate.js'),
             (err, fileData) => {
                 if (err)
                     return console.error(
